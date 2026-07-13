@@ -115,7 +115,7 @@ export default async function SalesOrderDetailPage({
           <CardHeader>
             <h2 className="font-semibold">添加商品行</h2>
             <p className="text-sm text-stone-500">
-              件数不得超过可用库存（ATP）。提交订单时会再次全单校验。
+              选择商品后立即显示可用库存（ATP）；件数不得超过 ATP。提交订单时会再次全单校验。
             </p>
           </CardHeader>
           <CardBody>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   addSoLine,
@@ -33,14 +33,43 @@ export function AddSoLineForm({
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [productId, setProductId] = useState("");
+  const [qtyUnits, setQtyUnits] = useState("");
   const router = useRouter();
   const selected = products.find((p) => p.id === productId);
+
+  const atpHint = useMemo(() => {
+    if (!selected) return null;
+    const atp = selected.atp_units;
+    const qty = Number(qtyUnits);
+    if (atp <= 0) {
+      return {
+        tone: "danger" as const,
+        text: "当前无可用库存（ATP 0），请先入库后再下单。",
+      };
+    }
+    if (Number.isFinite(qty) && qty > 0 && qty > atp) {
+      return {
+        tone: "warn" as const,
+        text: `件数 ${qty} 超过可用库存 ATP ${atp} 件，无法添加。`,
+      };
+    }
+    return {
+      tone: "ok" as const,
+      text: `现有可用库存（ATP）：${atp} 件`,
+    };
+  }, [selected, qtyUnits]);
+
+  const blocked =
+    !!selected &&
+    (selected.atp_units <= 0 ||
+      (Number(qtyUnits) > 0 && Number(qtyUnits) > selected.atp_units));
 
   return (
     <form
       className="grid gap-3 md:grid-cols-5"
       onSubmit={(e) => {
         e.preventDefault();
+        if (blocked) return;
         const fd = new FormData(e.currentTarget);
         setError(null);
         start(async () => {
@@ -48,6 +77,7 @@ export function AddSoLineForm({
             await addSoLine(salesOrderId, fd);
             e.currentTarget.reset();
             setProductId("");
+            setQtyUnits("");
             router.refresh();
           } catch (err) {
             setError(err instanceof Error ? err.message : "添加失败");
@@ -61,27 +91,49 @@ export function AddSoLineForm({
           name="product_id"
           required
           value={productId}
-          onChange={(e) => setProductId(e.target.value)}
+          onChange={(e) => {
+            setProductId(e.target.value);
+            setError(null);
+          }}
         >
           <option value="" disabled>
             请选择商品
           </option>
           {products.map((p) => (
             <option key={p.id} value={p.id}>
-              {p.sku} · {p.name} · {formatMoney(Number(p.current_price))} · ATP{" "}
-              {p.atp_units}
+              {p.sku} · {p.name} · {formatMoney(Number(p.current_price))}
             </option>
           ))}
         </Select>
-        {selected && (
-          <p className="mt-1 text-xs text-stone-500">
-            可用库存（ATP）: {selected.atp_units} 件
-          </p>
+        {atpHint && (
+          <div
+            className={
+              atpHint.tone === "ok"
+                ? "mt-2 rounded-md border border-teal-200 bg-teal-50 px-3 py-2 text-sm text-teal-900"
+                : atpHint.tone === "warn"
+                  ? "mt-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900"
+                  : "mt-2 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800"
+            }
+            role="status"
+          >
+            {atpHint.text}
+          </div>
         )}
       </div>
       <div>
         <Label>件数</Label>
-        <Input name="qty_units" type="number" min="0.01" step="0.01" required />
+        <Input
+          name="qty_units"
+          type="number"
+          min="0.01"
+          step="0.01"
+          required
+          value={qtyUnits}
+          onChange={(e) => setQtyUnits(e.target.value)}
+          max={
+            selected && selected.atp_units > 0 ? selected.atp_units : undefined
+          }
+        />
       </div>
       <div>
         <Label>预估重量(lb)</Label>
@@ -103,8 +155,8 @@ export function AddSoLineForm({
             {error}
           </p>
         )}
-        <Button type="submit" disabled={pending}>
-          {pending ? "校验中…" : "添加并重新校验"}
+        <Button type="submit" disabled={pending || blocked || !productId}>
+          {pending ? "添加中…" : "添加商品行"}
         </Button>
       </div>
     </form>
