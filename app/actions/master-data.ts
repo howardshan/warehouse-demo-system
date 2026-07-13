@@ -23,8 +23,40 @@ async function requireUser() {
 export async function createProduct(raw: unknown) {
   const parsed = productSchema.parse(raw);
   const { supabase } = await requireUser();
+
+  let familyId = parsed.family_id || null;
+  if (!familyId && parsed.family_code && parsed.family_name) {
+    const { data: existing } = await supabase
+      .from("product_families")
+      .select("id")
+      .eq("code", parsed.family_code)
+      .maybeSingle();
+    if (existing) familyId = existing.id;
+    else {
+      const { data: created, error: famErr } = await supabase
+        .from("product_families")
+        .insert({ code: parsed.family_code, name: parsed.family_name })
+        .select("id")
+        .single();
+      if (famErr) return { ok: false as const, error: famErr.message };
+      familyId = created.id;
+    }
+  }
+
+  const {
+    family_code: _familyCode,
+    family_name: _familyName,
+    family_id: _familyId,
+    ...rest
+  } = parsed;
+  void _familyCode;
+  void _familyName;
+  void _familyId;
+
   const { error } = await supabase.from("products").insert({
-    ...parsed,
+    ...rest,
+    family_id: familyId,
+    pack_contains_qty: parsed.pack_contains_qty ?? 1,
     avg_weight_lb: parsed.is_catch_weight ? parsed.avg_weight_lb : null,
     fixed_pick_location_id: parsed.fixed_pick_location_id || null,
     shelf_life_days: parsed.shelf_life_days || null,
@@ -40,17 +72,37 @@ export async function updateProduct(id: string, raw: unknown) {
   // 铁律 1:成交价必须物理存储 —— 主档改价只覆盖 current_price,
   // 已建 SO 行上的 unit_price 不受影响(SO 表在 Phase 4)
   // 详见 /docs/modules/04-pricing.md
+  const {
+    family_code: _familyCode,
+    family_name: _familyName,
+    sku: _sku,
+    ...rest
+  } = parsed;
+  void _familyCode;
+  void _familyName;
+  void _sku; // SKU 创建后不可改，避免破坏批次/单据引用
+
   const { error } = await supabase
     .from("products")
     .update({
-      ...parsed,
-      avg_weight_lb: parsed.is_catch_weight ? parsed.avg_weight_lb : null,
-      fixed_pick_location_id: parsed.fixed_pick_location_id || null,
-      shelf_life_days: parsed.shelf_life_days || null,
+      name: rest.name,
+      temp_zone: rest.temp_zone,
+      is_catch_weight: rest.is_catch_weight,
+      ordering_uom: rest.ordering_uom,
+      pricing_uom: rest.pricing_uom,
+      avg_weight_lb: rest.is_catch_weight ? rest.avg_weight_lb : null,
+      current_price: rest.current_price,
+      inspection_method: rest.inspection_method,
+      fixed_pick_location_id: rest.fixed_pick_location_id || null,
+      shelf_life_days: rest.shelf_life_days || null,
+      is_active: rest.is_active,
+      family_id: rest.family_id || null,
+      pack_contains_qty: rest.pack_contains_qty ?? 1,
     })
     .eq("id", id);
   if (error) return { ok: false as const, error: error.message };
   revalidatePath("/master-data/products");
+  revalidatePath(`/master-data/products/${id}`);
   return { ok: true as const };
 }
 

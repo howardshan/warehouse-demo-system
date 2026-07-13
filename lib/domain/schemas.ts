@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 export const TEMP_ZONES = ["ambient", "chilled", "frozen"] as const;
+export const ORDERING_UOMS = ["case", "bag", "lb", "pc", "box"] as const;
 export const LOCATION_TYPES = [
   "pick_face",
   "reserve",
@@ -21,11 +22,18 @@ export const CREDIT_STATUSES = [
 
 export const productSchema = z
   .object({
-    sku: z.string().min(1, "SKU 必填"),
-    name: z.string().min(1, "名称必填"),
+    sku: z
+      .string()
+      .min(1, "SKU 必填")
+      .transform((value) => value.trim().toUpperCase())
+      .refine(
+        (value) => /^[A-Z0-9]+(?:[_-][A-Z0-9]+)*$/.test(value),
+        "SKU 须为字母数字编码（可用 - 或 _ 分隔），例如 GARLIC-CASE",
+      ),
+    name: z.string().min(1, "销售产品名称必填"),
     temp_zone: z.enum(TEMP_ZONES),
     is_catch_weight: z.boolean(),
-    ordering_uom: z.string().min(1),
+    ordering_uom: z.enum(ORDERING_UOMS),
     pricing_uom: z.string().min(1),
     avg_weight_lb: z.coerce.number().positive().nullable().optional(),
     current_price: z.coerce.number().min(0),
@@ -33,6 +41,10 @@ export const productSchema = z
     fixed_pick_location_id: z.string().uuid().nullable().optional(),
     shelf_life_days: z.coerce.number().int().positive().nullable().optional(),
     is_active: z.boolean().default(true),
+    family_id: z.string().uuid().nullable().optional(),
+    pack_contains_qty: z.coerce.number().positive().default(1),
+    family_code: z.string().optional().nullable(),
+    family_name: z.string().optional().nullable(),
   })
   .superRefine((data, ctx) => {
     if (data.is_catch_weight) {

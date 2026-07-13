@@ -8,7 +8,7 @@
 | `suppliers` | `0003_locations_totes_suppliers.sql` | 保存采购上游主数据 |
 | `locations` | `0003_locations_totes_suppliers.sql` | 区分拣货、储备、隔离、月台等储位 |
 | `totes` | `0003_locations_totes_suppliers.sql` | 承载两步拣货的扫码周转筐 |
-| `products` | `0004_products.sql` | 保存 SKU、双单位、当前价与固定拣货位 |
+| `products` | `0004_products.sql` / `0022_product_sku_alphanumeric.sql` | SKU 为字母数字编码；`name` 为销售产品名称；双单位、当前价与固定拣货位 |
 | `customers` | `0005_customers.sql` | 保存客户、信用额度、停供状态与 Permit |
 | `customer_contacts` | `0005_customers.sql` | 支持订货、付款、收货等多联系人 |
 | `customer_addresses` | `0005_customers.sql` | 支持多门店、账单与送货地址 |

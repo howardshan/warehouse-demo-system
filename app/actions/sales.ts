@@ -30,6 +30,127 @@ function orderAmount(lines: Array<Record<string, unknown>>) {
   }, 0);
 }
 
+async function getAtpUnits(db: Db, productId: string): Promise<number> {
+  const { data } = await db
+    .from("v_atp")
+    .select("atp_units")
+    .eq("product_id", productId)
+    .maybeSingle();
+  return Number(data?.atp_units ?? 0);
+}
+
+/** 本单其他行已占用的数量（未写入 stock.allocated 前也要扣，避免同单重复加行超库存） */
+async function qtyAlreadyOnOrder(
+  db: Db,
+  salesOrderId: string,
+  productId: string,
+  excludeLineId?: string,
+): Promise<number> {
+  let query = db
+    .from("so_lines")
+    .select("id, qty_units, allocated_units")
+    .eq("sales_order_id", salesOrderId)
+    .eq("product_id", productId);
+  if (excludeLineId) query = query.neq("id", excludeLineId);
+  const { data } = await query;
+  return (data ?? []).reduce((sum, row) => sum + Number(row.qty_units), 0);
+}
+
+/**
+ * 铁律 3:ATP 按件数。
+ * available = v_atp.atp_units + 本行已预留(改数量时释放前已还回去则不加)
+ * 对「加行」：atp 需 ≥ 本行数量 + 同单其他行数量（若其他行尚未 allocate，atp 里还没扣，所以要手动扣同单未分配量）
+ *
+ * 简化规则（用户要求）：
+ * - 加行/改行：请求件数 > 当前 ATP（系统可用量）则禁止
+ * - 提交：再次遍历每行，不足则列出商品禁止提交
+ *
+ * 注意：同单多行同品时，第一行占了 ATP 视图之外的「意向」，第二行要扣掉第一行 qty。
+ */
+async function assertLineAtp(
+  db: Db,
+  args: {
+    salesOrderId: string;
+    productId: string;
+    qtyUnits: number;
+    excludeLineId?: string;
+    productLabel?: string;
+  },
+): Promise<void> {
+  const atp = await getAtpUnits(db, args.productId);
+  const onOrder = await qtyAlreadyOnOrder(
+    db,
+    args.salesOrderId,
+    args.productId,
+    args.excludeLineId,
+  );
+  // 若订单已确认，同单其他行可能已写入 allocated，ATP 已扣减；
+  // 未确认时 ATP 未扣同单意向，需用 onOrder 扣掉。
+  const { data: order } = await db
+    .from("sales_orders")
+    .select("status")
+    .eq("id", args.salesOrderId)
+    .single();
+  const confirmedLike = ["confirmed", "picking", "shipped"].includes(
+    order?.status ?? "",
+  );
+  const effectiveAtp = confirmedLike ? atp : atp - onOrder;
+  if (args.qtyUnits > effectiveAtp + 1e-9) {
+    const label = args.productLabel ?? args.productId;
+    throw new Error(
+      `库存不足，无法添加：${label} 需要 ${args.qtyUnits} 件，可用 ${Math.max(0, effectiveAtp)} 件`,
+    );
+  }
+}
+
+async function assertOrderAtp(db: Db, salesOrderId: string): Promise<void> {
+  const { data: lines, error } = await db
+    .from("so_lines")
+    .select("id, product_id, qty_units, allocated_units, products(sku, name)")
+    .eq("sales_order_id", salesOrderId)
+    .order("line_no");
+  if (error) throw new Error(error.message);
+  if (!lines?.length) throw new Error("订单至少需要一行商品");
+
+  // 按商品汇总本单需求
+  const needByProduct = new Map<
+    string,
+    { qty: number; label: string; allocated: number }
+  >();
+  for (const line of lines) {
+    const product = Array.isArray(line.products)
+      ? line.products[0]
+      : line.products;
+    const label = product
+      ? `${product.sku} · ${product.name}`
+      : String(line.product_id);
+    const cur = needByProduct.get(line.product_id) ?? {
+      qty: 0,
+      label,
+      allocated: 0,
+    };
+    cur.qty += Number(line.qty_units);
+    cur.allocated += Number(line.allocated_units);
+    needByProduct.set(line.product_id, cur);
+  }
+
+  const shortages: string[] = [];
+  for (const [productId, need] of needByProduct) {
+    const atp = await getAtpUnits(db, productId);
+    // 已分配给本单的量仍算「可用给本单」，应加回
+    const availableForThisOrder = atp + need.allocated;
+    if (need.qty > availableForThisOrder + 1e-9) {
+      shortages.push(
+        `${need.label}：需要 ${need.qty} 件，可用 ${Math.max(0, availableForThisOrder)} 件`,
+      );
+    }
+  }
+
+  if (shortages.length) {
+    throw new Error(`无法提交：以下商品没有足够库存\n${shortages.join("\n")}`);
+  }
+}
+
 async function settingNumber(db: Db, key: string, fallback: number) {
   const { data } = await db.from("settings").select("value").eq("key", key).maybeSingle();
   const value = Number(data?.value);
@@ -216,13 +337,43 @@ export async function createSalesOrder(formData: FormData): Promise<void> {
 export async function addSoLine(salesOrderId: string, formData: FormData): Promise<void> {
   const { supabase } = await requireUser();
   const productId = String(formData.get("product_id"));
-  const [{ data: product }, { data: cost }, { data: lastLine }] = await Promise.all([
-    supabase.from("products").select("current_price, is_catch_weight, avg_weight_lb").eq("id", productId).single(),
-    supabase.from("v_max_cost_in_stock").select("max_unit_cost").eq("product_id", productId).maybeSingle(),
-    supabase.from("so_lines").select("line_no").eq("sales_order_id", salesOrderId).order("line_no", { ascending: false }).limit(1).maybeSingle(),
-  ]);
-  if (!product || cost?.max_unit_cost == null) throw new Error("商品或在库成本不存在");
   const qty = numberValue(formData.get("qty_units"));
+  if (qty <= 0) throw new Error("件数必须大于 0");
+
+  const [{ data: product }, { data: cost }, { data: lastLine }] = await Promise.all([
+    supabase
+      .from("products")
+      .select("sku, name, current_price, is_catch_weight, avg_weight_lb")
+      .eq("id", productId)
+      .single(),
+    supabase
+      .from("v_max_cost_in_stock")
+      .select("max_unit_cost")
+      .eq("product_id", productId)
+      .maybeSingle(),
+    supabase
+      .from("so_lines")
+      .select("line_no")
+      .eq("sales_order_id", salesOrderId)
+      .order("line_no", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ]);
+  if (!product) throw new Error("商品不存在");
+  // 无在库成本时仍允许下单，但毛利护栏用 0 成本会偏乐观 —— 要求有库存成本
+  if (cost?.max_unit_cost == null) {
+    throw new Error(
+      `无法添加：${product.sku} · ${product.name} 当前无可用库存（无成本批），请先入库`,
+    );
+  }
+
+  await assertLineAtp(supabase, {
+    salesOrderId,
+    productId,
+    qtyUnits: qty,
+    productLabel: `${product.sku} · ${product.name}`,
+  });
+
   const explicitPrice = String(formData.get("unit_price") || "");
   const { error } = await supabase.from("so_lines").insert({
     sales_order_id: salesOrderId,
@@ -230,10 +381,15 @@ export async function addSoLine(salesOrderId: string, formData: FormData): Promi
     product_id: productId,
     qty_units: qty,
     estimated_weight_lb: product.is_catch_weight
-      ? numberValue(formData.get("estimated_weight_lb"), qty * Number(product.avg_weight_lb ?? 0))
+      ? numberValue(
+          formData.get("estimated_weight_lb"),
+          qty * Number(product.avg_weight_lb ?? 0),
+        )
       : null,
     is_catch_weight_snapshot: product.is_catch_weight,
-    unit_price: explicitPrice ? Number(explicitPrice) : Number(product.current_price),
+    unit_price: explicitPrice
+      ? Number(explicitPrice)
+      : Number(product.current_price),
     price_overridden: Boolean(explicitPrice),
     cost_snapshot: Number(cost.max_unit_cost),
     notes: String(formData.get("notes") || "") || null,
@@ -241,22 +397,53 @@ export async function addSoLine(salesOrderId: string, formData: FormData): Promi
   if (error) throw new Error(error.message);
   const result = await revalidateSoGates(salesOrderId);
   if (!result.ok) throw new Error(result.error);
+  revalidatePath(`/sales/orders/${salesOrderId}`);
 }
 
 export async function updateSoLine(lineId: string, salesOrderId: string, formData: FormData): Promise<void> {
   const { supabase } = await requireUser();
-  const { data: oldLine } = await supabase.from("so_lines").select("*").eq("id", lineId).single();
+  const { data: oldLine } = await supabase
+    .from("so_lines")
+    .select("*, products(sku, name)")
+    .eq("id", lineId)
+    .single();
   if (!oldLine) throw new Error("订单行不存在");
+
+  const qty = numberValue(formData.get("qty_units"));
+  if (qty <= 0) throw new Error("件数必须大于 0");
+
+  const product = Array.isArray(oldLine.products)
+    ? oldLine.products[0]
+    : oldLine.products;
+  const label = product
+    ? `${product.sku} · ${product.name}`
+    : String(oldLine.product_id);
+
+  // 先释放本行预留，再按新数量校验 ATP，避免把自己占的量算成占用
   await releaseLineAllocation(supabase, oldLine);
-  const { error } = await supabase.from("so_lines").update({
-    qty_units: numberValue(formData.get("qty_units")),
-    estimated_weight_lb: String(formData.get("estimated_weight_lb") || "")
-      ? numberValue(formData.get("estimated_weight_lb")) : null,
-    unit_price: numberValue(formData.get("unit_price")),
-    price_overridden: true,
-    allocated_units: 0,
-    notes: String(formData.get("notes") || "") || null,
-  }).eq("id", lineId);
+  await supabase.from("so_lines").update({ allocated_units: 0 }).eq("id", lineId);
+
+  await assertLineAtp(supabase, {
+    salesOrderId,
+    productId: String(oldLine.product_id),
+    qtyUnits: qty,
+    excludeLineId: lineId,
+    productLabel: label,
+  });
+
+  const { error } = await supabase
+    .from("so_lines")
+    .update({
+      qty_units: qty,
+      estimated_weight_lb: String(formData.get("estimated_weight_lb") || "")
+        ? numberValue(formData.get("estimated_weight_lb"))
+        : null,
+      unit_price: numberValue(formData.get("unit_price")),
+      price_overridden: true,
+      allocated_units: 0,
+      notes: String(formData.get("notes") || "") || null,
+    })
+    .eq("id", lineId);
   if (error) throw new Error(error.message);
   const result = await revalidateSoGates(salesOrderId);
   if (!result.ok) throw new Error(result.error);
@@ -280,8 +467,15 @@ export async function deleteSoLine(lineId: string, salesOrderId: string): Promis
 }
 
 export async function confirmSalesOrder(salesOrderId: string): Promise<void> {
+  const { supabase } = await requireUser();
+  // 提交时再次遍历库存；任一商品不足则禁止提交并提示
+  await assertOrderAtp(supabase, salesOrderId);
   const result = await revalidateSoGates(salesOrderId);
   if (!result.ok) throw new Error(result.error);
+  if (result.status && result.status !== "confirmed") {
+    // 信用/毛利未过也不算成功提交出库预留，但库存检查已过
+    // 保持现状：仍返回，由页面展示状态
+  }
 }
 
 export async function requestMarginApproval(salesOrderId: string, formData: FormData): Promise<void> {

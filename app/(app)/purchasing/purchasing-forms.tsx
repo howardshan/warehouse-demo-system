@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useRef, useState, useTransition } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   addPoLine,
@@ -11,6 +11,7 @@ import {
   postGoodsReceipt,
   repriceFromAlert,
   saveGrLines,
+  saveSupplierClaims,
   submitGoodsReceipt,
 } from "@/app/actions/purchasing";
 import { Button } from "@/components/ui/button";
@@ -70,22 +71,75 @@ export function PoLineForm({
   products,
 }: {
   poId: string;
-  products: Option[];
+  products: {
+    id: string;
+    sku: string;
+    name: string;
+    ordering_uom: string;
+    pricing_uom: string;
+    current_price: number;
+    is_catch_weight: boolean;
+    avg_weight_lb: number | null;
+    pack_contains_qty: number;
+    family_id: string | null;
+    family_code: string | null;
+    family_name: string | null;
+  }[];
 }) {
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
+  const families = useMemo(() => {
+    const map = new Map<
+      string,
+      { key: string; label: string; variants: typeof products }
+    >();
+    for (const p of products) {
+      const key = p.family_id ?? `solo:${p.id}`;
+      const label = p.family_name
+        ? `${p.family_name}${p.family_code ? ` (${p.family_code})` : ""}`
+        : `${p.name} · ${p.sku}`;
+      const row = map.get(key) ?? { key, label, variants: [] };
+      row.variants.push(p);
+      map.set(key, row);
+    }
+    return [...map.values()].sort((a, b) => a.label.localeCompare(b.label));
+  }, [products]);
+
+  const [familyKey, setFamilyKey] = useState(families[0]?.key ?? "");
+  const variants = useMemo(
+    () => families.find((f) => f.key === familyKey)?.variants ?? [],
+    [families, familyKey],
+  );
+  const [uom, setUom] = useState(variants[0]?.ordering_uom ?? "");
+  const selected =
+    variants.find((v) => v.ordering_uom === uom) ?? variants[0] ?? null;
+
+  useEffect(() => {
+    if (!variants.some((v) => v.ordering_uom === uom)) {
+      setUom(variants[0]?.ordering_uom ?? "");
+    }
+  }, [variants, uom]);
+
+  const priceHint = selected
+    ? `$${Number(selected.current_price).toFixed(2)} / ${selected.pricing_uom}`
+    : "";
+
   return (
     <form
-      className="grid gap-3 md:grid-cols-5"
+      className="grid gap-3 md:grid-cols-6"
       onSubmit={(event) => {
         event.preventDefault();
+        if (!selected) {
+          setError("请选择原产品与单位");
+          return;
+        }
         const form = event.currentTarget;
         const fd = new FormData(form);
         start(async () => {
           const result = await addPoLine(poId, {
-            product_id: String(fd.get("product_id")),
+            product_id: selected.id,
             qty_units: Number(fd.get("qty_units")),
             estimated_weight_lb: Number(fd.get("estimated_weight_lb")) || null,
             unit_cost: Number(fd.get("unit_cost")),
@@ -99,11 +153,90 @@ export function PoLineForm({
         });
       }}
     >
-      <div className="md:col-span-2"><Label>商品</Label><Select name="product_id" required><option value="">请选择</option>{products.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}</Select></div>
-      <div><Label>订购件数</Label><Input name="qty_units" type="number" min="0.001" step="0.001" required /></div>
-      <div><Label>预计重量（lb）</Label><Input name="estimated_weight_lb" type="number" min="0" step="0.001" /></div>
-      <div><Label>单位成本</Label><Input name="unit_cost" type="number" min="0" step="0.01" required /></div>
-      <div className="md:col-span-5 space-y-2"><FormMessage error={error} /><Button type="submit" disabled={pending}>{pending ? "添加中…" : "添加明细"}</Button></div>
+      <div className="md:col-span-2">
+        <Label>原产品</Label>
+        <Select
+          value={familyKey}
+          onChange={(e) => setFamilyKey(e.target.value)}
+          required
+        >
+          <option value="">请选择原产品</option>
+          {families.map((f) => (
+            <option key={f.key} value={f.key}>
+              {f.label}
+            </option>
+          ))}
+        </Select>
+        {selected?.family_id && variants.length > 1 && (
+          <p className="mt-1 text-xs text-stone-500">
+            同族包装：
+            {variants
+              .map(
+                (v) =>
+                  `${v.ordering_uom}(${v.sku}${v.pack_contains_qty > 1 ? `=×${v.pack_contains_qty}` : ""})`,
+              )
+              .join(" · ")}
+          </p>
+        )}
+      </div>
+      <div>
+        <Label>订货单位</Label>
+        <Select
+          value={uom}
+          onChange={(e) => setUom(e.target.value)}
+          required
+          disabled={!variants.length}
+        >
+          {!variants.length && <option value="">无可用单位</option>}
+          {variants.map((v) => (
+            <option key={v.id} value={v.ordering_uom}>
+              {v.ordering_uom}
+              {v.pack_contains_qty > 1
+                ? ` (含 ${v.pack_contains_qty})`
+                : ""}{" "}
+              · {v.sku}
+            </option>
+          ))}
+        </Select>
+      </div>
+      <div>
+        <Label>数量（按所选单位）</Label>
+        <Input name="qty_units" type="number" min="0.001" step="0.001" required />
+      </div>
+      <div>
+        <Label>预计重量（lb）</Label>
+        <Input
+          name="estimated_weight_lb"
+          type="number"
+          min="0"
+          step="0.001"
+          placeholder={selected?.is_catch_weight ? "称重品建议填写" : "可选"}
+        />
+      </div>
+      <div>
+        <Label>单价</Label>
+        <Input
+          name="unit_cost"
+          type="number"
+          min="0"
+          step="0.01"
+          required
+          defaultValue={selected ? String(selected.current_price) : ""}
+          key={selected?.id ?? "none"}
+        />
+        <p className="mt-1 text-xs text-stone-500">
+          {priceHint || "选择单位后显示计价单位"}
+          {selected && selected.pricing_uom !== selected.ordering_uom
+            ? `（订货=${selected.ordering_uom}，计价=${selected.pricing_uom}）`
+            : ""}
+        </p>
+      </div>
+      <div className="md:col-span-6 space-y-2">
+        <FormMessage error={error} />
+        <Button type="submit" disabled={pending || !selected}>
+          {pending ? "添加中…" : "添加明细"}
+        </Button>
+      </div>
     </form>
   );
 }
@@ -151,6 +284,7 @@ export type BlindGrLine = {
   notes: string | null;
 };
 
+/** 铁律 13：盲收现场只录实收，不含供应商声称数量 */
 export function BlindReceivingForm({
   receiptId,
   lines,
@@ -169,12 +303,10 @@ export function BlindReceivingForm({
   function readLines(fd: FormData) {
     return lines.map((line, index) => ({
       id: line.id,
-      supplier_claimed_units: Number(fd.get(`claimed_${index}`)),
       actual_units: Number(fd.get(`actual_${index}`)),
       actual_weight_lb: Number(fd.get(`weight_${index}`)),
       lot_no: String(fd.get(`lot_${index}`)),
       expiry_date: String(fd.get(`expiry_${index}`) || "") || null,
-      variance_reason: String(fd.get(`reason_${index}`) || "") || null,
       notes: String(fd.get(`notes_${index}`) || "") || null,
     }));
   }
@@ -195,19 +327,152 @@ export function BlindReceivingForm({
         <Card key={line.id}>
           <CardHeader><div className="font-semibold">{line.productName} <span className="ml-2 font-mono text-xs text-stone-500">{line.sku}</span></div></CardHeader>
           <CardBody className="grid gap-4 md:grid-cols-4">
-            <div><Label>供应商声称件数</Label><Input name={`claimed_${index}`} type="number" min="0" step="0.001" defaultValue={line.supplier_claimed_units} disabled={!editable} required /></div>
-            <div><Label>实际件数</Label><Input name={`actual_${index}`} type="number" min="0" step="0.001" defaultValue={line.actual_units} disabled={!editable} required /></div>
-            <div><Label>实际重量（lb）</Label><Input name={`weight_${index}`} type="number" min="0" step="0.001" defaultValue={line.actual_weight_lb} disabled={!editable} required /></div>
-            <div><Label>供应商批号 / LOT</Label><Input name={`lot_${index}`} defaultValue={line.lot_no === "__PENDING__" ? "" : line.lot_no} disabled={!editable} required /></div>
-            <div><Label>效期</Label><Input name={`expiry_${index}`} type="date" defaultValue={line.expiry_date || ""} disabled={!editable} /></div>
-            <div><Label>差异原因</Label><Select name={`reason_${index}`} defaultValue={line.variance_reason || ""} disabled={!editable}><option value="">无差异</option><option value="out_of_stock">缺货</option><option value="stock_mismatch">库存不符</option><option value="quality_reject">质量拒收</option><option value="near_expiry">临期</option><option value="underweight">重量不足</option><option value="other">其他</option></Select></div>
-            <div className="md:col-span-2"><Label>备注</Label><Input name={`notes_${index}`} defaultValue={line.notes || ""} disabled={!editable} /></div>
+            <div>
+              <Label required>实际件数</Label>
+              <Input name={`actual_${index}`} type="number" min="0" step="0.001" defaultValue={line.actual_units} disabled={!editable} required />
+            </div>
+            <div>
+              <Label required>实际重量（lb）</Label>
+              <Input name={`weight_${index}`} type="number" min="0" step="0.001" defaultValue={line.actual_weight_lb} disabled={!editable} required />
+            </div>
+            <div>
+              <Label required>供应商批号 / LOT</Label>
+              <Input name={`lot_${index}`} defaultValue={line.lot_no === "__PENDING__" ? "" : line.lot_no} disabled={!editable} required />
+            </div>
+            <div>
+              <Label>效期（选填）</Label>
+              <Input name={`expiry_${index}`} type="date" defaultValue={line.expiry_date || ""} disabled={!editable} />
+            </div>
+            <div className="md:col-span-4">
+              <Label>备注（选填）</Label>
+              <Input name={`notes_${index}`} defaultValue={line.notes || ""} disabled={!editable} />
+            </div>
           </CardBody>
         </Card>
       ))}
       <FormMessage error={error} />
-      {editable && <div className="flex gap-3"><Button type="submit" disabled={pending}>{pending ? "保存中…" : "保存盲收结果"}</Button><Button type="button" variant="secondary" disabled={pending} onClick={() => start(async () => { if (!formRef.current) return; const saved = await saveGrLines(receiptId, readLines(new FormData(formRef.current))); if (!saved.ok) { setError(saved.error); return; } const result = await submitGoodsReceipt(receiptId); if (!result.ok) setError(result.error); else router.refresh(); })}>保存并三单核对</Button></div>}
-      {status === "matched" && <Button type="button" disabled={pending} onClick={() => start(async () => { const result = await postGoodsReceipt(receiptId); if (!result.ok) setError(result.error); else router.refresh(); })}>{pending ? "过账中…" : "过账入库"}</Button>}
+      {editable && (
+        <Button type="submit" disabled={pending}>
+          {pending ? "保存中…" : "保存盲收结果"}
+        </Button>
+      )}
+      {status === "matched" && (
+        <Button
+          type="button"
+          disabled={pending}
+          onClick={() =>
+            start(async () => {
+              const result = await postGoodsReceipt(receiptId);
+              if (!result.ok) setError(result.error);
+              else router.refresh();
+            })
+          }
+        >
+          {pending ? "过账中…" : "过账入库"}
+        </Button>
+      )}
+    </form>
+  );
+}
+
+/** 采购/文员按供应商送货单录入声称数量与差异原因（与盲收分离） */
+export function SupplierDeliveryNoteForm({
+  receiptId,
+  lines,
+  status,
+}: {
+  receiptId: string;
+  lines: BlindGrLine[];
+  status: string;
+}) {
+  const [pending, start] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
+  const editable = status === "draft";
+
+  function handleSave(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const fd = new FormData(event.currentTarget);
+    start(async () => {
+      const payload = lines.map((line, index) => ({
+        id: line.id,
+        supplier_claimed_units: Number(fd.get(`claimed_${index}`)),
+        variance_reason: String(fd.get(`reason_${index}`) || "") || null,
+      }));
+      const result = await saveSupplierClaims(receiptId, payload);
+      if (!result.ok) setError(result.error);
+      else { setError(null); router.refresh(); }
+    });
+  }
+
+  return (
+    <form onSubmit={handleSave} className="space-y-4">
+      {lines.map((line, index) => (
+        <Card key={line.id}>
+          <CardHeader>
+            <div className="font-semibold">
+              {line.productName}{" "}
+              <span className="ml-2 font-mono text-xs text-stone-500">{line.sku}</span>
+            </div>
+            <p className="mt-1 text-xs text-stone-500">
+              现场实收：{line.actual_units} 件
+              {line.lot_no !== "__PENDING__" ? ` · LOT ${line.lot_no}` : ""}
+            </p>
+          </CardHeader>
+          <CardBody className="grid gap-4 md:grid-cols-3">
+            <div>
+              <Label>送货单声称件数</Label>
+              <Input
+                name={`claimed_${index}`}
+                type="number"
+                min="0"
+                step="0.001"
+                defaultValue={line.supplier_claimed_units}
+                disabled={!editable}
+                required
+              />
+            </div>
+            <div>
+              <Label>差异原因（与实收不同时必填）</Label>
+              <Select
+                name={`reason_${index}`}
+                defaultValue={line.variance_reason || ""}
+                disabled={!editable}
+              >
+                <option value="">无差异</option>
+                <option value="out_of_stock">缺货</option>
+                <option value="stock_mismatch">库存不符</option>
+                <option value="quality_reject">质量拒收</option>
+                <option value="near_expiry">临期</option>
+                <option value="underweight">重量不足</option>
+                <option value="other">其他</option>
+              </Select>
+            </div>
+          </CardBody>
+        </Card>
+      ))}
+      <FormMessage error={error} />
+      {editable && (
+        <div className="flex flex-wrap gap-3">
+          <Button type="submit" disabled={pending}>
+            {pending ? "保存中…" : "保存送货单数量"}
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={pending}
+            onClick={() =>
+              start(async () => {
+                const result = await submitGoodsReceipt(receiptId);
+                if (!result.ok) setError(result.error);
+                else router.refresh();
+              })
+            }
+          >
+            三单核对
+          </Button>
+        </div>
+      )}
     </form>
   );
 }

@@ -20,13 +20,19 @@ type PoLineInput = {
 
 export type GrLineInput = {
   id: string;
-  supplier_claimed_units: number;
+  supplier_claimed_units?: number;
   actual_units: number;
   actual_weight_lb: number;
   lot_no: string;
   expiry_date?: string | null;
   variance_reason?: string | null;
   notes?: string | null;
+};
+
+export type SupplierClaimInput = {
+  id: string;
+  supplier_claimed_units: number;
+  variance_reason?: string | null;
 };
 
 async function requireUser() {
@@ -197,32 +203,86 @@ export async function saveGrLines(goodsReceiptId: string, lines: GrLineInput[]) 
     if (receipt.status !== "draft") throw new Error("只能编辑草稿收货单");
 
     for (const line of lines) {
-      const claimed = Number(line.supplier_claimed_units);
       const actual = Number(line.actual_units);
       const weight = Number(line.actual_weight_lb);
-      if ([claimed, actual, weight].some((value) => !Number.isFinite(value) || value < 0)) {
+      if ([actual, weight].some((value) => !Number.isFinite(value) || value < 0)) {
         throw new Error("数量和重量必须为非负数");
       }
       if (!line.lot_no.trim()) throw new Error("供应商批号不能为空");
-      if (actual !== claimed && !line.variance_reason) {
-        throw new Error("实收与供应商声称数量不同时必须选择差异原因");
-      }
+
+      // 铁律 13：盲收只写实收字段，不改 supplier_claimed_units
       const { error } = await supabase
         .from("gr_lines")
         .update({
-          supplier_claimed_units: claimed,
           actual_units: actual,
           actual_weight_lb: weight,
           lot_no: line.lot_no.trim(),
           expiry_date: line.expiry_date || null,
-          variance_reason: actual === claimed ? null : line.variance_reason,
           notes: line.notes || null,
         })
         .eq("id", line.id)
         .eq("goods_receipt_id", goodsReceiptId);
       if (error) throw error;
     }
-    // 铁律 13：本动作不读取、更不回传 ordered_units 给收货界面。
+    revalidatePath(`/purchasing/receiving/${goodsReceiptId}`);
+    return { ok: true as const };
+  } catch (error) {
+    return failure(error);
+  }
+}
+
+/** 采购/文员按供应商送货单录入声称数量（不在盲收员界面） */
+export async function saveSupplierClaims(
+  goodsReceiptId: string,
+  lines: SupplierClaimInput[],
+) {
+  try {
+    const { supabase } = await requireUser();
+    const { data: receipt, error: receiptError } = await supabase
+      .from("goods_receipts")
+      .select("status")
+      .eq("id", goodsReceiptId)
+      .single();
+    if (receiptError) throw receiptError;
+    if (receipt.status !== "draft") throw new Error("只能编辑草稿收货单");
+
+    for (const line of lines) {
+      const claimed = Number(line.supplier_claimed_units);
+      if (!Number.isFinite(claimed) || claimed < 0) {
+        throw new Error("供应商声称数量必须为非负数");
+      }
+
+      const { data: existing, error: loadErr } = await supabase
+        .from("gr_lines")
+        .select("actual_units")
+        .eq("id", line.id)
+        .eq("goods_receipt_id", goodsReceiptId)
+        .single();
+      if (loadErr) throw loadErr;
+
+      const actual = Number(existing.actual_units);
+      const variance =
+        claimed === 0
+          ? null
+          : actual === claimed
+            ? null
+            : line.variance_reason || null;
+      if (claimed > 0 && actual !== claimed && !variance) {
+        throw new Error(
+          "送货单数量与实收不同时，必须选择差异原因后再保存",
+        );
+      }
+
+      const { error } = await supabase
+        .from("gr_lines")
+        .update({
+          supplier_claimed_units: claimed,
+          variance_reason: variance,
+        })
+        .eq("id", line.id)
+        .eq("goods_receipt_id", goodsReceiptId);
+      if (error) throw error;
+    }
     revalidatePath(`/purchasing/receiving/${goodsReceiptId}`);
     return { ok: true as const };
   } catch (error) {
@@ -239,7 +299,12 @@ export async function submitGoodsReceipt(goodsReceiptId: string) {
       .eq("goods_receipt_id", goodsReceiptId);
     if (linesError) throw linesError;
     if (!lines?.length || lines.some((line) => line.lot_no === "__PENDING__")) {
-      throw new Error("请先完整保存全部收货明细");
+      throw new Error("请先完整保存全部盲收明细（实收、批号）");
+    }
+    if (lines.some((line) => Number(line.supplier_claimed_units) <= 0)) {
+      throw new Error(
+        "请先由采购录入供应商送货单声称数量，再进行三单核对",
+      );
     }
     // 三单核对：PO 数量、供应商送货单数量、仓库盲收数量三者独立比较。
     const matched = lines.every(
