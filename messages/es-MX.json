@@ -16,7 +16,21 @@
     "account": "Cuentas",
     "finance": "Finanzas",
     "it": "TI",
-    "master": "Datos maestros"
+    "master": "Datos maestros",
+    "hubTitle": "Espacio de trabajo",
+    "hubSubtitle": "Elige un módulo para abrir sus funciones",
+    "allModules": "Todos los módulos",
+    "enter": "Entrar",
+    "open": "Abrir",
+    "itemsSuffix": "funciones",
+    "dashboardDesc": "Alertas operativas y colas de pendientes",
+    "purchasingDesc": "Órdenes de compra, recepción, alertas de precio y proveedores",
+    "warehouseInboundDesc": "Inventario, lotes, reabasto, cuarentena, reempaque y devoluciones",
+    "warehouseOutboundDesc": "Surtido, pesaje, embarque, entrega y POD",
+    "salesDesc": "Órdenes de venta, aprobaciones de margen e historial",
+    "accountDesc": "Clientes y control de crédito",
+    "financeDesc": "Facturación, notas de crédito y colas de crédito",
+    "itDesc": "Usuarios, permisos, roles, bitácora y ajustes"
   },
   "nav": {
     "dashboard": "Tablero principal",

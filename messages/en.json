@@ -16,7 +16,21 @@
     "account": "Account",
     "finance": "Finance",
     "it": "IT",
-    "master": "Master Data"
+    "master": "Master Data",
+    "hubTitle": "Workspace",
+    "hubSubtitle": "Pick a module to open its detailed features",
+    "allModules": "All modules",
+    "enter": "Enter",
+    "open": "Open",
+    "itemsSuffix": "features",
+    "dashboardDesc": "Operational alerts and to-do queues",
+    "purchasingDesc": "POs, receiving, price alerts and suppliers",
+    "warehouseInboundDesc": "Stock, batches, replenishment, quarantine, repack and returns-in",
+    "warehouseOutboundDesc": "Picking, weighing, shipping, delivery and POD",
+    "salesDesc": "Sales orders, margin approvals and history",
+    "accountDesc": "Customer records and credit control",
+    "financeDesc": "Billing, credit notes and credit control queues",
+    "itDesc": "Users, permissions, roles, audit log and settings"
   },
   "nav": {
     "dashboard": "Home dashboard",

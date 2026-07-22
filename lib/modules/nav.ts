@@ -71,15 +71,49 @@ export function isReceivingStepActive(
 export type NavModule = {
   id: ModuleId;
   labelKey: string;
+  /** 模块门户卡片的一句话说明 */
+  descKey: string;
   /** 任一权限即可看到该模块分组 */
   anyOf: string[];
   items: NavItem[];
 };
 
+/** 模块门户 / 侧栏落地路径 */
+export function modulePath(id: ModuleId): string {
+  return id === "dashboard" ? "/dashboard" : `/m/${id}`;
+}
+
+const MODULE_SEG_RE = /^\/m\/([a-z_]+)/;
+
+/** 由当前 pathname 反推所属模块（/m/<id> 优先，其次按导航项前缀匹配） */
+export function findModuleId(pathname: string): ModuleId | null {
+  const seg = pathname.match(MODULE_SEG_RE)?.[1];
+  if (seg && NAV_MODULES.some((m) => m.id === seg)) {
+    return seg as ModuleId;
+  }
+  if (pathname === "/dashboard" || pathname.startsWith("/dashboard/")) {
+    return "dashboard";
+  }
+  for (const mod of NAV_MODULES) {
+    for (const item of mod.items) {
+      const candidates = item.children?.length
+        ? [...item.children, item]
+        : [item];
+      for (const cand of candidates) {
+        if (pathname === cand.href || pathname.startsWith(cand.href + "/")) {
+          return mod.id;
+        }
+      }
+    }
+  }
+  return null;
+}
+
 export const NAV_MODULES: NavModule[] = [
   {
     id: "dashboard",
     labelKey: "modules.dashboard",
+    descKey: "modules.dashboardDesc",
     anyOf: ["dashboard.view"],
     items: [
       { href: "/dashboard", labelKey: "nav.dashboard", permission: "dashboard.view" },
@@ -88,6 +122,7 @@ export const NAV_MODULES: NavModule[] = [
   {
     id: "purchasing",
     labelKey: "modules.purchasing",
+    descKey: "modules.purchasingDesc",
     anyOf: [
       "purchasing.po.read",
       "purchasing.po.write",
@@ -171,6 +206,7 @@ export const NAV_MODULES: NavModule[] = [
   {
     id: "warehouse_inbound",
     labelKey: "modules.warehouseInbound",
+    descKey: "modules.warehouseInboundDesc",
     anyOf: [
       "warehouse.stock.read",
       "warehouse.stock.adjust",
@@ -227,6 +263,7 @@ export const NAV_MODULES: NavModule[] = [
   {
     id: "warehouse_outbound",
     labelKey: "modules.warehouseOutbound",
+    descKey: "modules.warehouseOutboundDesc",
     anyOf: [
       "warehouse.picklists.write",
       "warehouse.picking.write",
@@ -272,6 +309,7 @@ export const NAV_MODULES: NavModule[] = [
   {
     id: "sales",
     labelKey: "modules.sales",
+    descKey: "modules.salesDesc",
     anyOf: [
       "sales.orders.read",
       "sales.orders.write",
@@ -296,6 +334,7 @@ export const NAV_MODULES: NavModule[] = [
   {
     id: "account",
     labelKey: "modules.account",
+    descKey: "modules.accountDesc",
     anyOf: [
       "account.customers.read",
       "account.customers.write",
@@ -317,6 +356,7 @@ export const NAV_MODULES: NavModule[] = [
   {
     id: "finance",
     labelKey: "modules.finance",
+    descKey: "modules.financeDesc",
     anyOf: ["finance.billing.read", "finance.credit_control.write"],
     items: [
       {
@@ -339,6 +379,7 @@ export const NAV_MODULES: NavModule[] = [
   {
     id: "it",
     labelKey: "modules.it",
+    descKey: "modules.itDesc",
     anyOf: [
       "it.users.manage",
       "it.permissions.manage",

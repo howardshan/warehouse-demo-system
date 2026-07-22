@@ -16,7 +16,21 @@
     "account": "账户",
     "finance": "财务",
     "it": "IT",
-    "master": "主数据"
+    "master": "主数据",
+    "hubTitle": "工作台",
+    "hubSubtitle": "选择一个模块进入对应的详细功能",
+    "allModules": "全部模块",
+    "enter": "进入",
+    "open": "打开",
+    "itemsSuffix": "项功能",
+    "dashboardDesc": "运营异常汇总与待办队列",
+    "purchasingDesc": "采购订单、收货、涨价提醒与供应商",
+    "warehouseInboundDesc": "库存、批次、补货、隔离、分装与退货入库",
+    "warehouseOutboundDesc": "拣货、称重、发运、配送与签收",
+    "salesDesc": "销售订单、毛利审批与历史追溯",
+    "accountDesc": "客户档案与信用控制",
+    "financeDesc": "开票、贷记与信用控制队列",
+    "itDesc": "用户、权限、角色、日志与系统设置"
   },
   "nav": {
     "dashboard": "首页看板",
