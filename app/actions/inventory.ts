@@ -225,3 +225,143 @@ export async function listAtp() {
   if (error) return [];
   return data ?? [];
 }
+
+export type StockAdjustInput = {
+  stock_id: string;
+  after_units: number;
+  after_weight_lb: number;
+  variance_reason: string;
+  notes?: string | null;
+};
+
+/** 库存调整(ADJ)：改写在手量，必须登记差异原因；写入 inventory_adjustments + stock（触发器留痕） */
+export async function adjustStock(input: StockAdjustInput) {
+  try {
+    const { supabase } = await requireUser();
+    const afterUnits = Number(input.after_units);
+    const afterWeight = Number(input.after_weight_lb);
+    if (!Number.isFinite(afterUnits) || afterUnits < 0) {
+      throw new Error("调整后件数必须为非负数");
+    }
+    if (!Number.isFinite(afterWeight) || afterWeight < 0) {
+      throw new Error("调整后重量必须为非负数");
+    }
+    if (!input.variance_reason) {
+      throw new Error("库存调整必须选择差异原因");
+    }
+
+    const { data: row, error: loadErr } = await supabase
+      .from("stock")
+      .select(
+        "id, location_id, batch_id, qty_units, qty_weight_lb, allocated_units, allocated_weight_lb, batches!inner(product_id)",
+      )
+      .eq("id", input.stock_id)
+      .single();
+    if (loadErr) throw loadErr;
+
+    const beforeUnits = Number(row.qty_units);
+    const beforeWeight = Number(row.qty_weight_lb);
+    if (beforeUnits === afterUnits && beforeWeight === afterWeight) {
+      throw new Error("调整前后数量相同，无需保存");
+    }
+    if (afterUnits < Number(row.allocated_units)) {
+      throw new Error(
+        `调整后件数 ${afterUnits} 低于已占用 ${row.allocated_units}，请先释放预留`,
+      );
+    }
+    if (afterWeight < Number(row.allocated_weight_lb)) {
+      throw new Error(`调整后重量低于已占用重量，请先释放预留`);
+    }
+
+    const batch = Array.isArray(row.batches) ? row.batches[0] : row.batches;
+    const productId = (batch as { product_id?: string } | null)?.product_id;
+    if (!productId) throw new Error("库存行缺少商品");
+
+    const { data: adj, error: adjErr } = await supabase
+      .from("inventory_adjustments")
+      .insert({
+        stock_id: row.id,
+        product_id: productId,
+        location_id: row.location_id,
+        batch_id: row.batch_id,
+        before_units: beforeUnits,
+        before_weight_lb: beforeWeight,
+        after_units: afterUnits,
+        after_weight_lb: afterWeight,
+        variance_reason: input.variance_reason,
+        notes: input.notes || null,
+      })
+      .select("id")
+      .single();
+    if (adjErr) throw adjErr;
+
+    const { error: stockErr } = await supabase
+      .from("stock")
+      .update({
+        qty_units: afterUnits,
+        qty_weight_lb: afterWeight,
+      })
+      .eq("id", row.id);
+    if (stockErr) {
+      await supabase.from("inventory_adjustments").delete().eq("id", adj.id);
+      throw stockErr;
+    }
+
+    // 数量归零时可标记批次耗尽（非强制）
+    if (afterUnits === 0 && afterWeight === 0) {
+      const { data: remaining } = await supabase
+        .from("stock")
+        .select("id")
+        .eq("batch_id", row.batch_id)
+        .or("qty_units.gt.0,qty_weight_lb.gt.0")
+        .limit(1);
+      if (!remaining?.length) {
+        await supabase
+          .from("batches")
+          .update({ status: "depleted" })
+          .eq("id", row.batch_id)
+          .eq("status", "available");
+      }
+    }
+
+    revalidatePath("/inventory/stock");
+    revalidatePath("/inventory/adj");
+    revalidatePath("/it/audit-log");
+    return { ok: true as const, id: adj.id };
+  } catch (error) {
+    return failure(error);
+  }
+}
+
+export async function listInventoryAdjustments() {
+  const { supabase } = await requireUser();
+  const { data, error } = await supabase
+    .from("inventory_adjustments")
+    .select(
+      "id, before_units, before_weight_lb, after_units, after_weight_lb, variance_reason, notes, created_at, created_by, products(sku, name), locations(code), batches(lot_no)",
+    )
+    .order("created_at", { ascending: false })
+    .limit(100);
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function listAuditLog(opts?: {
+  tableName?: string | null;
+  limit?: number;
+}) {
+  const { supabase } = await requireUser();
+  let query = supabase
+    .from("audit_log")
+    .select(
+      "id, table_name, record_id, action, changed_by, old_values, new_values, created_at",
+    )
+    .order("created_at", { ascending: false })
+    .limit(opts?.limit ?? 200);
+  if (opts?.tableName) {
+    query = query.eq("table_name", opts.tableName);
+  }
+  const { data, error } = await query;
+  if (error) throw error;
+  return data ?? [];
+}

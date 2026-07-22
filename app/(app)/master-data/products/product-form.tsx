@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createProduct, updateProduct } from "@/app/actions/master-data";
 import {
@@ -15,7 +15,15 @@ import { Select } from "@/components/ui/select";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 
 type LocationOption = { id: string; code: string; type: string };
-type FamilyOption = { id: string; code: string; name: string };
+type FamilyOption = {
+  id: string;
+  code: string;
+  name: string;
+  purchase_uom: string | null;
+  outer_pack_weight_lb: number | null;
+  supplier_name: string | null;
+  is_catch_weight: boolean;
+};
 
 export type ProductFormValues = {
   id?: string;
@@ -33,47 +41,17 @@ export type ProductFormValues = {
   is_active: boolean;
   family_id: string | null;
   pack_contains_qty: number;
+  is_purchasable: boolean;
+  is_sellable: boolean;
+  requires_debox: boolean;
 };
 
-function buildPayload(
-  fd: FormData,
-  opts: {
-    sku: string;
-    isCatch: boolean;
-    orderingUom: string;
-    mode: "create" | "edit";
-  },
-) {
-  const familyId = String(fd.get("family_id") || "") || null;
-  return {
-    sku: opts.sku,
-    name: String(fd.get("name")),
-    temp_zone: String(fd.get("temp_zone")),
-    is_catch_weight: opts.isCatch,
-    ordering_uom: opts.orderingUom,
-    pricing_uom: opts.isCatch
-      ? "lb"
-      : String(fd.get("pricing_uom") || opts.orderingUom),
-    avg_weight_lb: opts.isCatch ? Number(fd.get("avg_weight_lb")) : null,
-    current_price: Number(fd.get("current_price")),
-    inspection_method: String(fd.get("inspection_method")),
-    fixed_pick_location_id:
-      String(fd.get("fixed_pick_location_id") || "") || null,
-    shelf_life_days: fd.get("shelf_life_days")
-      ? Number(fd.get("shelf_life_days"))
-      : null,
-    is_active: String(fd.get("status")) !== "off_shelf",
-    family_id: familyId,
-    family_code:
-      opts.mode === "create" && !familyId
-        ? String(fd.get("new_family_code") || "") || null
-        : null,
-    family_name:
-      opts.mode === "create" && !familyId
-        ? String(fd.get("new_family_name") || "") || null
-        : null,
-    pack_contains_qty: Number(fd.get("pack_contains_qty") || 1),
-  };
+function roleFromFlags(purchasable: boolean, sellable: boolean) {
+  // 不再支持「采购且销售」；历史 both 记录编辑时默认归为采购包装
+  if (purchasable && !sellable) return "purchase";
+  if (sellable && !purchasable) return "sell";
+  if (purchasable) return "purchase";
+  return "sell";
 }
 
 export function ProductForm({
@@ -94,18 +72,41 @@ export function ProductForm({
   const [orderingUom, setOrderingUom] = useState(
     initial?.ordering_uom ?? "case",
   );
+  const [familyId, setFamilyId] = useState(initial?.family_id ?? "");
+  const [role, setRole] = useState<"purchase" | "sell">(
+    roleFromFlags(initial?.is_purchasable ?? false, initial?.is_sellable ?? true),
+  );
+  const [requiresDebox, setRequiresDebox] = useState(
+    initial?.requires_debox ?? false,
+  );
   const pickFaces = locations.filter((l) => l.type === "pick_face");
+
+  const selectedFamily = useMemo(
+    () => families.find((f) => f.id === familyId) ?? null,
+    [families, familyId],
+  );
+  const purchaseUom = selectedFamily?.purchase_uom || orderingUom;
+  const canDebox = role === "sell";
+  const familyTare =
+    selectedFamily?.outer_pack_weight_lb != null
+      ? Number(selectedFamily.outer_pack_weight_lb)
+      : null;
+  // 原产品称重标记优先；新建时随原产品同步
+  const familyCatch = selectedFamily?.is_catch_weight;
+  const effectiveCatch =
+    familyCatch != null ? familyCatch : isCatch;
 
   return (
     <Card>
       <CardHeader>
         <h2 className="text-lg font-semibold">
-          {mode === "create" ? "新建商品 / 包装 SKU" : `编辑商品 ${initial?.sku ?? ""}`}
+          {mode === "create"
+            ? "新建商品 / 包装 SKU"
+            : `编辑商品 ${initial?.sku ?? ""}`}
         </h2>
         <p className="text-sm text-stone-500">
-          {mode === "create"
-            ? "同一原产品可建多个 SKU（箱装 / 包装）。订货单位从列表选择。"
-            : "改主档售价只影响新单；历史订单行成交价不变。SKU 创建后不可修改。"}
+          采购包装与销售包装分开建。须归属原产品，并填写相对采购单位的转换比（如 1
+          case = 4 bag；采购箱本身填 1）。
         </p>
       </CardHeader>
       <CardBody>
@@ -119,13 +120,46 @@ export function ProductForm({
               mode === "edit" && initial
                 ? initial.sku
                 : String(fd.get("sku"));
+            const isPurchasable = role === "purchase";
+            const isSellable = role === "sell";
+            const packQty = Number(fd.get("pack_contains_qty"));
+            if (!familyId) {
+              setError("必须归属原产品");
+              return;
+            }
+            if (!Number.isFinite(packQty) || packQty <= 0) {
+              setError("转换比必须大于 0");
+              return;
+            }
             start(async () => {
-              const payload = buildPayload(fd, {
+              const payload = {
                 sku,
-                isCatch,
-                orderingUom,
-                mode,
-              });
+                name: String(fd.get("name")),
+                temp_zone: String(fd.get("temp_zone")),
+                is_catch_weight: effectiveCatch,
+                ordering_uom: orderingUom,
+                pricing_uom: effectiveCatch
+                  ? "lb"
+                  : String(fd.get("pricing_uom") || orderingUom),
+                avg_weight_lb: effectiveCatch
+                  ? Number(fd.get("avg_weight_lb"))
+                  : null,
+                current_price: Number(fd.get("current_price")),
+                inspection_method: String(fd.get("inspection_method")),
+                fixed_pick_location_id:
+                  String(fd.get("fixed_pick_location_id") || "") || null,
+                shelf_life_days: fd.get("shelf_life_days")
+                  ? Number(fd.get("shelf_life_days"))
+                  : null,
+                is_active: String(fd.get("status")) !== "off_shelf",
+                family_id: familyId,
+                family_code: null,
+                family_name: null,
+                pack_contains_qty: packQty,
+                is_purchasable: isPurchasable,
+                is_sellable: isSellable,
+                requires_debox: isSellable ? requiresDebox : false,
+              };
               const res =
                 mode === "edit" && initial?.id
                   ? await updateProduct(initial.id, payload)
@@ -138,6 +172,9 @@ export function ProductForm({
                 e.currentTarget.reset();
                 setIsCatch(false);
                 setOrderingUom("case");
+                setFamilyId("");
+                setRole("sell");
+                setRequiresDebox(false);
                 router.refresh();
               } else {
                 router.push("/master-data/products");
@@ -153,22 +190,17 @@ export function ProductForm({
             ) : (
               <Input
                 name="sku"
-                placeholder="GARLIC-CASE"
+                placeholder="GARLIC-BAG"
                 pattern="[A-Za-z0-9]+([_-][A-Za-z0-9]+)*"
-                title="仅字母、数字，可用 - 或 _ 分隔"
-                autoCapitalize="characters"
                 required
               />
             )}
-            <p className="mt-1 text-xs text-stone-500">
-              字母数字编码，例如 CHK-BR-10、GARLIC-BAG
-            </p>
           </div>
           <div>
             <Label required>销售产品名称</Label>
             <Input
               name="name"
-              placeholder="大蒜(箱)"
+              placeholder="大蒜(包)"
               defaultValue={initial?.name}
               required
             />
@@ -177,52 +209,129 @@ export function ProductForm({
             <Label required>状态</Label>
             <Select
               name="status"
-              defaultValue={initial?.is_active === false ? "off_shelf" : "on_shelf"}
+              defaultValue={
+                initial?.is_active === false ? "off_shelf" : "on_shelf"
+              }
             >
               <option value="on_shelf">上架</option>
               <option value="off_shelf">下架</option>
             </Select>
+          </div>
+          <div>
+            <Label required>包装用途</Label>
+            <Select
+              value={role}
+              onChange={(e) => {
+                const next = e.target.value as "purchase" | "sell";
+                setRole(next);
+                if (next === "purchase") setRequiresDebox(false);
+              }}
+            >
+              <option value="purchase">仅采购包装</option>
+              <option value="sell">仅销售包装</option>
+            </Select>
             <p className="mt-1 text-xs text-stone-500">
-              下架后不可再加入新销售/采购单，历史单据不受影响
+              采购与销售分开建 SKU，不再使用「采购且销售」
             </p>
           </div>
           <div>
-            <Label>归属原产品</Label>
-            <Select name="family_id" defaultValue={initial?.family_id ?? ""}>
-              <option value="">— 无 —</option>
+            <Label required>归属原产品</Label>
+            <Select
+              name="family_id"
+              value={familyId}
+              onChange={(e) => {
+                const next = e.target.value;
+                setFamilyId(next);
+                const fam = families.find((f) => f.id === next);
+                if (fam) setIsCatch(fam.is_catch_weight);
+              }}
+              required
+            >
+              <option value="">请选择原产品</option>
               {families.map((f) => (
                 <option key={f.id} value={f.id}>
                   {f.name} ({f.code})
+                  {f.supplier_name ? ` · ${f.supplier_name}` : ""}
+                  {f.purchase_uom ? ` · 采购单位 ${f.purchase_uom}` : ""}
+                </option>
+              ))}
+            </Select>
+            <p className="mt-1 text-xs text-stone-500">
+              请先在采购模块「原产品」页建好原产品及其采购单位
+            </p>
+          </div>
+          <div>
+            <Label required>本包装单位</Label>
+            <Select
+              value={orderingUom}
+              onChange={(e) => setOrderingUom(e.target.value)}
+              required
+            >
+              {ORDERING_UOMS.map((u) => (
+                <option key={u} value={u}>
+                  {u}
                 </option>
               ))}
             </Select>
           </div>
-          {mode === "create" && (
-            <>
-              <div>
-                <Label>或新建原产品编码</Label>
-                <Input name="new_family_code" placeholder="GARLIC" />
-              </div>
-              <div>
-                <Label>新建原产品名称</Label>
-                <Input name="new_family_name" placeholder="大蒜 / Garlic" />
-              </div>
-            </>
-          )}
-          <div>
-            <Label>本包装含量</Label>
-            <Input
-              name="pack_contains_qty"
-              type="number"
-              min="0.001"
-              step="0.001"
-              defaultValue={initial?.pack_contains_qty ?? 1}
-              required
-            />
-            <p className="mt-1 text-xs text-stone-500">
-              例：箱装填 4，表示 1 case = 4 bag
+
+          <div className="md:col-span-2 rounded-md border border-teal-200 bg-teal-50/60 p-4">
+            <Label required>采购 ↔ 本包装 转换比</Label>
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
+              <span className="font-medium">1</span>
+              <span className="rounded bg-white px-2 py-1 font-mono text-xs">
+                {purchaseUom || "采购单位"}
+              </span>
+              <span className="font-medium">=</span>
+              <Input
+                name="pack_contains_qty"
+                type="number"
+                min="0.001"
+                step="0.001"
+                className="w-28"
+                defaultValue={
+                  initial?.pack_contains_qty ?? (role === "purchase" ? 1 : "")
+                }
+                required
+              />
+              <span className="rounded bg-white px-2 py-1 font-mono text-xs">
+                {orderingUom}
+              </span>
+            </div>
+            <p className="mt-2 text-xs text-teal-900">
+              必填。例：采购箱本身填 1（1 case = 1 case）；按包销售填 4（1 case =
+              4 bag）。
             </p>
           </div>
+
+          {canDebox && (
+            <div className="md:col-span-2 rounded-md border border-stone-200 bg-stone-50/80 p-4">
+              <div className="flex items-start gap-2">
+                <input
+                  id="requires_debox"
+                  type="checkbox"
+                  className="mt-1"
+                  checked={requiresDebox}
+                  onChange={(e) => setRequiresDebox(e.target.checked)}
+                />
+                <div>
+                  <Label htmlFor="requires_debox" className="mb-0">
+                    散卖需去盒
+                  </Label>
+                  <p className="mt-1 text-xs text-stone-500">
+                    采购有外盒、零售散卖无盒时勾选。库存按净重 = 毛重 −
+                    采购件数 × 原产品外包装重量。整箱卖请勿勾选。
+                    {familyTare != null && familyTare > 0
+                      ? ` 当前原产品皮重 ${familyTare} lb。`
+                      : familyId
+                        ? " 当前原产品未填外包装重量，勾选后仍不会扣减，请先在原产品页补填。"
+                        : " 请先归属原产品并填写外包装重量。"}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div>
             <Label>温区</Label>
             <Select
@@ -251,30 +360,22 @@ export function ProductForm({
             <input
               id="is_catch_weight"
               type="checkbox"
-              checked={isCatch}
+              checked={effectiveCatch}
+              disabled={familyCatch != null}
               onChange={(e) => setIsCatch(e.target.checked)}
             />
             <Label htmlFor="is_catch_weight" className="mb-0">
               称重品 — 计价按 lb
+              {familyCatch != null && (
+                <span className="ml-2 text-xs font-normal text-stone-500">
+                  （跟随原产品「需要称重」设置）
+                </span>
+              )}
             </Label>
           </div>
           <div>
-            <Label>订货单位</Label>
-            <Select
-              value={orderingUom}
-              onChange={(e) => setOrderingUom(e.target.value)}
-              required
-            >
-              {ORDERING_UOMS.map((u) => (
-                <option key={u} value={u}>
-                  {u}
-                </option>
-              ))}
-            </Select>
-          </div>
-          <div>
             <Label>计价单位</Label>
-            {isCatch ? (
+            {effectiveCatch ? (
               <Input name="pricing_uom" value="lb" readOnly />
             ) : (
               <Select
@@ -290,7 +391,7 @@ export function ProductForm({
               </Select>
             )}
           </div>
-          {isCatch && (
+          {effectiveCatch && (
             <div>
               <Label>均重 lb（仅预估）</Label>
               <Input

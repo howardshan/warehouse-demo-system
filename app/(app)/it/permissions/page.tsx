@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSessionAccess, can } from "@/lib/auth/access";
 import { createClient } from "@/lib/supabase/server";
@@ -57,7 +58,13 @@ export default async function ItPermissionsPage({
           {t(messages, "it.permissionsTitle")}
         </h1>
         <p className="mt-1 text-sm text-stone-500">
-          {t(messages, "it.permissionsHint")}
+          {t(messages, "it.permissionsHint")}{" "}
+          <Link
+            href="/it/role-permissions"
+            className="text-teal-800 hover:underline"
+          >
+            {t(messages, "nav.rolePermissions")}
+          </Link>
         </p>
       </div>
 

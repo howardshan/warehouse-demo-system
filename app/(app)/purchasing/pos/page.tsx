@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { getRequestLocale } from "@/app/actions/i18n";
 import { Badge } from "@/components/ui/badge";
+import { getDictionary } from "@/lib/i18n/dictionaries";
+import { statusLabel } from "@/lib/i18n/status";
 import { PoCreateForm } from "../purchasing-forms";
 
 const tone = (status: string) =>
@@ -13,6 +16,8 @@ const tone = (status: string) =>
         : "warn";
 
 export default async function PurchaseOrdersPage() {
+  const locale = await getRequestLocale();
+  const messages = getDictionary(locale);
   const supabase = await createClient();
   const [{ data: orders }, { data: suppliers }] = await Promise.all([
     supabase
@@ -32,7 +37,7 @@ export default async function PurchaseOrdersPage() {
           <tbody>
             {(orders ?? []).map((order) => {
               const supplier = Array.isArray(order.suppliers) ? order.suppliers[0] : order.suppliers;
-              return <tr key={order.id} className="border-t border-stone-100"><td className="px-4 py-3"><Link href={`/purchasing/pos/${order.id}`} className="font-mono text-xs text-teal-800 hover:underline">{order.po_number}</Link></td><td className="px-4 py-3">{supplier?.name ?? "—"}</td><td className="px-4 py-3">{order.order_date}</td><td className="px-4 py-3">{order.expected_date ?? "—"}</td><td className="px-4 py-3"><Badge tone={tone(order.status)}>{order.status}</Badge></td></tr>;
+              return <tr key={order.id} className="border-t border-stone-100"><td className="px-4 py-3"><Link href={`/purchasing/pos/${order.id}`} className="font-mono text-xs text-teal-800 hover:underline">{order.po_number}</Link></td><td className="px-4 py-3">{supplier?.name ?? "—"}</td><td className="px-4 py-3">{order.order_date}</td><td className="px-4 py-3">{order.expected_date ?? "—"}</td><td className="px-4 py-3"><Badge tone={tone(order.status)}>{statusLabel(messages, "po", order.status)}</Badge></td></tr>;
             })}
             {!orders?.length && <tr><td colSpan={5} className="px-4 py-8 text-center text-stone-400">暂无采购订单</td></tr>}
           </tbody>

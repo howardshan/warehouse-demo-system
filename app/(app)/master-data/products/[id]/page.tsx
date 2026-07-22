@@ -15,19 +15,35 @@ export default async function ProductEditPage({
       supabase
         .from("products")
         .select(
-          "id, sku, name, temp_zone, is_catch_weight, ordering_uom, pricing_uom, avg_weight_lb, current_price, is_active, fixed_pick_location_id, pack_contains_qty, family_id, inspection_method, shelf_life_days",
+          "id, sku, name, temp_zone, is_catch_weight, ordering_uom, pricing_uom, avg_weight_lb, current_price, is_active, fixed_pick_location_id, pack_contains_qty, family_id, inspection_method, shelf_life_days, is_purchasable, is_sellable, requires_debox",
         )
         .eq("id", id)
         .maybeSingle(),
       supabase.from("locations").select("id, code, type").eq("is_active", true),
       supabase
         .from("product_families")
-        .select("id, code, name")
+        .select(
+          "id, code, name, purchase_uom, outer_pack_weight_lb, is_catch_weight, suppliers(name)",
+        )
         .eq("is_active", true)
         .order("name"),
     ]);
 
   if (!product) notFound();
+
+  const familyOptions = (families ?? []).map((f) => {
+    const supplier = Array.isArray(f.suppliers) ? f.suppliers[0] : f.suppliers;
+    return {
+      id: f.id,
+      code: f.code,
+      name: f.name,
+      purchase_uom: f.purchase_uom,
+      outer_pack_weight_lb:
+        f.outer_pack_weight_lb == null ? null : Number(f.outer_pack_weight_lb),
+      supplier_name: supplier?.name ?? null,
+      is_catch_weight: Boolean(f.is_catch_weight),
+    };
+  });
 
   return (
     <div className="space-y-6">
@@ -46,7 +62,7 @@ export default async function ProductEditPage({
       <ProductForm
         mode="edit"
         locations={locations ?? []}
-        families={families ?? []}
+        families={familyOptions}
         initial={{
           id: product.id,
           sku: product.sku,
@@ -65,6 +81,9 @@ export default async function ProductEditPage({
           is_active: product.is_active,
           family_id: product.family_id,
           pack_contains_qty: Number(product.pack_contains_qty ?? 1),
+          is_purchasable: product.is_purchasable ?? true,
+          is_sellable: product.is_sellable ?? true,
+          requires_debox: product.requires_debox ?? false,
         }}
       />
     </div>

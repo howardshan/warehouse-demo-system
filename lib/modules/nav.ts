@@ -8,11 +8,65 @@ export type ModuleId =
   | "finance"
   | "it";
 
+/** 收货流程四步（侧栏子项；进单据后按当前 id 跳转对应页） */
+export type ReceivingStep = "blind" | "shipping" | "invoice" | "match";
+
 export type NavItem = {
   href: string;
   labelKey: string;
   permission: string;
+  /** 可选：嵌套子菜单（如原产品 / 收货） */
+  children?: NavItem[];
+  /** 收货四步：动态链接与高亮 */
+  receivingStep?: ReceivingStep;
 };
+
+const RECEIVING_ID_RE =
+  /^\/purchasing\/receiving\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(?:\/|$)/i;
+
+export function extractReceivingId(pathname: string): string | null {
+  const m = pathname.match(RECEIVING_ID_RE);
+  return m?.[1] ?? null;
+}
+
+export function receivingStepHref(
+  pathname: string,
+  step: ReceivingStep,
+): string {
+  const id = extractReceivingId(pathname);
+  if (!id) return "/purchasing/receiving";
+  const base = `/purchasing/receiving/${id}`;
+  switch (step) {
+    case "blind":
+      return base;
+    case "shipping":
+      return `${base}/delivery-note`;
+    case "invoice":
+      return `${base}/invoice`;
+    case "match":
+      return `${base}/match`;
+  }
+}
+
+export function isReceivingStepActive(
+  pathname: string,
+  step: ReceivingStep,
+): boolean {
+  const id = extractReceivingId(pathname);
+  if (!id) {
+    return step === "blind" && pathname === "/purchasing/receiving";
+  }
+  if (pathname.startsWith(`/purchasing/receiving/${id}/delivery-note`)) {
+    return step === "shipping";
+  }
+  if (pathname.startsWith(`/purchasing/receiving/${id}/invoice`)) {
+    return step === "invoice";
+  }
+  if (pathname.startsWith(`/purchasing/receiving/${id}/match`)) {
+    return step === "match";
+  }
+  return step === "blind" && pathname === `/purchasing/receiving/${id}`;
+}
 
 export type NavModule = {
   id: ModuleId;
@@ -48,6 +102,32 @@ export const NAV_MODULES: NavModule[] = [
         href: "/purchasing/receiving",
         labelKey: "nav.receiving",
         permission: "purchasing.receiving.write",
+        children: [
+          {
+            href: "/purchasing/receiving",
+            labelKey: "nav.receivingBlind",
+            permission: "purchasing.receiving.write",
+            receivingStep: "blind",
+          },
+          {
+            href: "/purchasing/receiving/shipping",
+            labelKey: "nav.receivingShipping",
+            permission: "purchasing.receiving.write",
+            receivingStep: "shipping",
+          },
+          {
+            href: "/purchasing/receiving/invoice",
+            labelKey: "nav.receivingInvoice",
+            permission: "purchasing.receiving.write",
+            receivingStep: "invoice",
+          },
+          {
+            href: "/purchasing/receiving/match",
+            labelKey: "nav.receivingMatch",
+            permission: "purchasing.receiving.write",
+            receivingStep: "match",
+          },
+        ],
       },
       {
         href: "/purchasing/price-alerts",
@@ -60,9 +140,31 @@ export const NAV_MODULES: NavModule[] = [
         permission: "purchasing.suppliers.write",
       },
       {
-        href: "/master-data/products",
-        labelKey: "nav.products",
+        href: "/purchasing/families",
+        labelKey: "nav.productFamilyGroup",
         permission: "master.products.write",
+        children: [
+          {
+            href: "/purchasing/categories",
+            labelKey: "nav.productCategories",
+            permission: "master.products.write",
+          },
+          {
+            href: "/purchasing/families/new",
+            labelKey: "nav.productFamiliesNew",
+            permission: "master.products.write",
+          },
+          {
+            href: "/purchasing/families",
+            labelKey: "nav.productFamilies",
+            permission: "master.products.write",
+          },
+          {
+            href: "/master-data/products",
+            labelKey: "nav.products",
+            permission: "master.products.write",
+          },
+        ],
       },
     ],
   },
@@ -71,6 +173,7 @@ export const NAV_MODULES: NavModule[] = [
     labelKey: "modules.warehouseInbound",
     anyOf: [
       "warehouse.stock.read",
+      "warehouse.stock.adjust",
       "warehouse.replenishment.write",
       "warehouse.repack.write",
       "warehouse.locations.write",
@@ -78,6 +181,11 @@ export const NAV_MODULES: NavModule[] = [
     ],
     items: [
       { href: "/inventory/stock", labelKey: "nav.stock", permission: "warehouse.stock.read" },
+      {
+        href: "/inventory/adj",
+        labelKey: "nav.stockAdj",
+        permission: "warehouse.stock.adjust",
+      },
       { href: "/inventory/batches", labelKey: "nav.batches", permission: "warehouse.stock.read" },
       {
         href: "/inventory/replenishment",
@@ -231,13 +339,28 @@ export const NAV_MODULES: NavModule[] = [
   {
     id: "it",
     labelKey: "modules.it",
-    anyOf: ["it.users.manage", "it.permissions.manage", "master.settings.write"],
+    anyOf: [
+      "it.users.manage",
+      "it.permissions.manage",
+      "master.settings.write",
+      "audit.log.read",
+    ],
     items: [
       { href: "/it/users", labelKey: "nav.users", permission: "it.users.manage" },
       {
         href: "/it/permissions",
         labelKey: "nav.permissions",
         permission: "it.permissions.manage",
+      },
+      {
+        href: "/it/role-permissions",
+        labelKey: "nav.rolePermissions",
+        permission: "it.permissions.manage",
+      },
+      {
+        href: "/it/audit-log",
+        labelKey: "nav.auditLog",
+        permission: "audit.log.read",
       },
       {
         href: "/settings",
@@ -253,12 +376,18 @@ export function requiredPermissionsForPath(pathname: string): string[] | null {
   if (pathname === "/dashboard" || pathname.startsWith("/dashboard")) {
     return ["dashboard.view"];
   }
+  let best: { href: string; permission: string } | null = null;
   for (const mod of NAV_MODULES) {
     for (const item of mod.items) {
-      if (pathname === item.href || pathname.startsWith(item.href + "/")) {
-        return [item.permission];
+      const candidates = item.children?.length ? [...item.children, item] : [item];
+      for (const cand of candidates) {
+        if (pathname === cand.href || pathname.startsWith(cand.href + "/")) {
+          if (!best || cand.href.length > best.href.length) {
+            best = { href: cand.href, permission: cand.permission };
+          }
+        }
       }
     }
   }
-  return null;
+  return best ? [best.permission] : null;
 }

@@ -1,10 +1,10 @@
 # 采购与收货
 
 ## 1. 业务规则
-- 采购订单记录订购数量、预计重量与单位成本；收货员盲收时**只**填写实收件数、实重、供应商批号和效期，**不**填写供应商声称数量。
-- `supplier_claimed_units` 由采购/文员按供应商送货单另行录入（与盲收界面分离）。
-- `ordered_units`、`supplier_claimed_units`、`actual_units` 三个事实分列保存，形成订单、供应商单据、实收结果的三方核对，不能合并成一个数量。
-- 送货单已录入后，实收与声称不一致时必须选择 `variance_reason`（`claimed=0` 表示送货单尚未录入，不强制差异原因）。
+- 采购订单记录订购数量、预计重量与单位成本。
+- **现场盲收**、**Shipping List（送货单）**、**Invoice（发票）** 必须在不同页面独立填写，录入时互不展示对方数量，也不展示 PO 订购数量。
+- 盲收页只写实收件数、实重（称重品必填）、供应商批号和效期；Shipping List 页写 `supplier_document_no` + `supplier_claimed_units`；Invoice 页写 `supplier_invoice_no` + `invoice_claimed_units`（称重品另写 `invoice_claimed_weight_lb`）。
+- **单据核对页**才同时展示订购 / Shipping List / Invoice / 实收；实收与两份供应商单据不一致须补 `variance_reason` 后再提交核对。称重品若 Invoice 重量 vs 实收重量偏差超过 `receiving_weight_tolerance_pct`，显示 warning（不阻断）。
 - 采购收货生成采购来源批次；新批成本超过阈值时写入非阻断成本提醒，不阻塞收货。
 
 ## 2. 涉及的表视图
@@ -17,6 +17,9 @@
 - `supabase/migrations/0011_batches_stock.sql`
 - `supabase/migrations/0017_phase_rls_extras.sql`
 - `supabase/migrations/0021_blind_receive_no_claimed_on_floor.sql`
+- `supabase/migrations/0023_gr_variance_at_match_only.sql`
+- `supabase/migrations/0028_supplier_invoice_on_gr.sql`
+
 
 ## 4. 守护了哪些铁律
 - 铁律 2：价格和成本保留在交易行与批次层，不依赖单头推导。
@@ -31,6 +34,5 @@
 - `0017` 再校验收货行确实属于该收货单的采购订单，防止跨单串行。
 
 ## 6. 已知边界
-- 数据库保存盲收所需的独立事实；前端将「现场盲收」与「送货单声称」拆成两个区块，且不展示 PO 订购数量。
-- 当前没有独立供应商发票表，三方核对中的供应商侧以 `supplier_claimed_units` 和单据号表示。
+- 路由：`/purchasing/receiving/[id]` 盲收、`.../delivery-note` Shipping List、`.../invoice` Invoice、`.../match` 单据核对；查询字段刻意拆分，避免串视。
 - 成本提醒失败只产生数据库 warning，不回滚批次创建。

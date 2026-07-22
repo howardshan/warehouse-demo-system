@@ -35,6 +35,12 @@ export type SupplierClaimInput = {
   variance_reason?: string | null;
 };
 
+export type InvoiceClaimInput = {
+  id: string;
+  invoice_claimed_units: number;
+  invoice_claimed_weight_lb?: number | null;
+};
+
 async function requireUser() {
   const supabase = await createClient();
   const {
@@ -175,6 +181,7 @@ export async function createGoodsReceipt(
         line_no: line.line_no,
         ordered_units: line.qty_units,
         supplier_claimed_units: 0,
+        invoice_claimed_units: 0,
         actual_units: 0,
         actual_weight_lb: 0,
         lot_no: "__PENDING__",
@@ -203,10 +210,40 @@ export async function saveGrLines(goodsReceiptId: string, lines: GrLineInput[]) 
     if (receipt.status !== "draft") throw new Error("只能编辑草稿收货单");
 
     for (const line of lines) {
+      const { data: meta, error: metaErr } = await supabase
+        .from("gr_lines")
+        .select(
+          "id, po_lines(products(is_catch_weight, product_families(is_catch_weight)))",
+        )
+        .eq("id", line.id)
+        .eq("goods_receipt_id", goodsReceiptId)
+        .single();
+      if (metaErr) throw metaErr;
+      const poLine = Array.isArray(meta.po_lines) ? meta.po_lines[0] : meta.po_lines;
+      const product = poLine
+        ? Array.isArray(poLine.products)
+          ? poLine.products[0]
+          : poLine.products
+        : null;
+      const family = product
+        ? Array.isArray(product.product_families)
+          ? product.product_families[0]
+          : product.product_families
+        : null;
+      const needsWeight = Boolean(
+        family?.is_catch_weight ?? product?.is_catch_weight,
+      );
+
       const actual = Number(line.actual_units);
       const weight = Number(line.actual_weight_lb);
-      if ([actual, weight].some((value) => !Number.isFinite(value) || value < 0)) {
-        throw new Error("数量和重量必须为非负数");
+      if (!Number.isFinite(actual) || actual < 0) {
+        throw new Error("实收件数必须为非负数");
+      }
+      if (!Number.isFinite(weight) || weight < 0) {
+        throw new Error("实收重量必须为非负数");
+      }
+      if (needsWeight && weight <= 0) {
+        throw new Error("称重品必须填写实收重量（lb）");
       }
       if (!line.lot_no.trim()) throw new Error("供应商批号不能为空");
 
@@ -215,7 +252,7 @@ export async function saveGrLines(goodsReceiptId: string, lines: GrLineInput[]) 
         .from("gr_lines")
         .update({
           actual_units: actual,
-          actual_weight_lb: weight,
+          actual_weight_lb: needsWeight ? weight : 0,
           lot_no: line.lot_no.trim(),
           expiry_date: line.expiry_date || null,
           notes: line.notes || null,
@@ -225,16 +262,165 @@ export async function saveGrLines(goodsReceiptId: string, lines: GrLineInput[]) 
       if (error) throw error;
     }
     revalidatePath(`/purchasing/receiving/${goodsReceiptId}`);
+    revalidatePath(`/purchasing/receiving/${goodsReceiptId}/match`);
     return { ok: true as const };
   } catch (error) {
     return failure(error);
   }
 }
 
-/** 采购/文员按供应商送货单录入声称数量（不在盲收员界面） */
+/** 采购/文员按 Shipping List（送货单）录入声称数量（与盲收分页，不读实收） */
 export async function saveSupplierClaims(
   goodsReceiptId: string,
   lines: SupplierClaimInput[],
+  meta?: { supplier_document_no?: string | null },
+) {
+  try {
+    const { supabase } = await requireUser();
+    const { data: receipt, error: receiptError } = await supabase
+      .from("goods_receipts")
+      .select("status")
+      .eq("id", goodsReceiptId)
+      .single();
+    if (receiptError) throw receiptError;
+    if (receipt.status !== "draft") throw new Error("只能编辑草稿收货单");
+
+    if (meta && "supplier_document_no" in meta) {
+      const docNo = meta.supplier_document_no?.trim() || null;
+      const { error: headerErr } = await supabase
+        .from("goods_receipts")
+        .update({ supplier_document_no: docNo })
+        .eq("id", goodsReceiptId);
+      if (headerErr) throw headerErr;
+    }
+
+    for (const line of lines) {
+      const claimed = Number(line.supplier_claimed_units);
+      if (!Number.isFinite(claimed) || claimed < 0) {
+        throw new Error("Shipping List 声称数量必须为非负数");
+      }
+      if (claimed <= 0) {
+        throw new Error("Shipping List 声称件数必须大于 0");
+      }
+
+      // 铁律 13：本动作不读取 actual_units，避免与盲收串视
+      const { error } = await supabase
+        .from("gr_lines")
+        .update({
+          supplier_claimed_units: claimed,
+        })
+        .eq("id", line.id)
+        .eq("goods_receipt_id", goodsReceiptId);
+      if (error) throw error;
+    }
+    revalidatePath(`/purchasing/receiving/${goodsReceiptId}`);
+    revalidatePath(`/purchasing/receiving/${goodsReceiptId}/delivery-note`);
+    revalidatePath(`/purchasing/receiving/${goodsReceiptId}/invoice`);
+    revalidatePath(`/purchasing/receiving/${goodsReceiptId}/match`);
+    revalidatePath("/purchasing/receiving");
+    return { ok: true as const };
+  } catch (error) {
+    return failure(error);
+  }
+}
+
+/** 采购/文员按供应商 Invoice（发票）录入声称数量（与盲收/送货单分页） */
+export async function saveSupplierInvoiceClaims(
+  goodsReceiptId: string,
+  lines: InvoiceClaimInput[],
+  meta?: { supplier_invoice_no?: string | null },
+) {
+  try {
+    const { supabase } = await requireUser();
+    const { data: receipt, error: receiptError } = await supabase
+      .from("goods_receipts")
+      .select("status")
+      .eq("id", goodsReceiptId)
+      .single();
+    if (receiptError) throw receiptError;
+    if (receipt.status !== "draft") throw new Error("只能编辑草稿收货单");
+
+    if (meta && "supplier_invoice_no" in meta) {
+      const invNo = meta.supplier_invoice_no?.trim() || null;
+      if (!invNo) throw new Error("请填写供应商发票号");
+      const { error: headerErr } = await supabase
+        .from("goods_receipts")
+        .update({ supplier_invoice_no: invNo })
+        .eq("id", goodsReceiptId);
+      if (headerErr) throw headerErr;
+    }
+
+    for (const line of lines) {
+      const { data: meta, error: metaErr } = await supabase
+        .from("gr_lines")
+        .select(
+          "id, po_lines(products(is_catch_weight, product_families(is_catch_weight)))",
+        )
+        .eq("id", line.id)
+        .eq("goods_receipt_id", goodsReceiptId)
+        .single();
+      if (metaErr) throw metaErr;
+      const poLine = Array.isArray(meta.po_lines) ? meta.po_lines[0] : meta.po_lines;
+      const product = poLine
+        ? Array.isArray(poLine.products)
+          ? poLine.products[0]
+          : poLine.products
+        : null;
+      const family = product
+        ? Array.isArray(product.product_families)
+          ? product.product_families[0]
+          : product.product_families
+        : null;
+      const needsWeight = Boolean(
+        family?.is_catch_weight ?? product?.is_catch_weight,
+      );
+
+      const claimed = Number(line.invoice_claimed_units);
+      if (!Number.isFinite(claimed) || claimed < 0) {
+        throw new Error("Invoice 声称数量必须为非负数");
+      }
+      if (claimed <= 0) {
+        throw new Error("Invoice 声称件数必须大于 0");
+      }
+
+      let weight: number | null = null;
+      if (needsWeight) {
+        weight = Number(line.invoice_claimed_weight_lb);
+        if (!Number.isFinite(weight) || weight <= 0) {
+          throw new Error("称重品必须填写 Invoice 声称重量（lb）");
+        }
+      }
+
+      const { error } = await supabase
+        .from("gr_lines")
+        .update({
+          invoice_claimed_units: claimed,
+          invoice_claimed_weight_lb: needsWeight ? weight : null,
+        })
+        .eq("id", line.id)
+        .eq("goods_receipt_id", goodsReceiptId);
+      if (error) throw error;
+    }
+    revalidatePath(`/purchasing/receiving/${goodsReceiptId}`);
+    revalidatePath(`/purchasing/receiving/${goodsReceiptId}/delivery-note`);
+    revalidatePath(`/purchasing/receiving/${goodsReceiptId}/invoice`);
+    revalidatePath(`/purchasing/receiving/${goodsReceiptId}/match`);
+    revalidatePath("/purchasing/receiving");
+    return { ok: true as const };
+  } catch (error) {
+    return failure(error);
+  }
+}
+
+export type MatchVarianceInput = {
+  id: string;
+  variance_reason?: string | null;
+};
+
+/** 三单核对页：补齐差异原因后提交核对 */
+export async function saveMatchVariances(
+  goodsReceiptId: string,
+  lines: MatchVarianceInput[],
 ) {
   try {
     const { supabase } = await requireUser();
@@ -247,43 +433,34 @@ export async function saveSupplierClaims(
     if (receipt.status !== "draft") throw new Error("只能编辑草稿收货单");
 
     for (const line of lines) {
-      const claimed = Number(line.supplier_claimed_units);
-      if (!Number.isFinite(claimed) || claimed < 0) {
-        throw new Error("供应商声称数量必须为非负数");
-      }
-
       const { data: existing, error: loadErr } = await supabase
         .from("gr_lines")
-        .select("actual_units")
+        .select("actual_units, supplier_claimed_units, invoice_claimed_units")
         .eq("id", line.id)
         .eq("goods_receipt_id", goodsReceiptId)
         .single();
       if (loadErr) throw loadErr;
 
       const actual = Number(existing.actual_units);
-      const variance =
-        claimed === 0
-          ? null
-          : actual === claimed
-            ? null
-            : line.variance_reason || null;
-      if (claimed > 0 && actual !== claimed && !variance) {
+      const shipping = Number(existing.supplier_claimed_units);
+      const invoice = Number(existing.invoice_claimed_units);
+      const needsReason =
+        actual !== shipping || actual !== invoice || shipping !== invoice;
+      const variance = needsReason ? line.variance_reason || null : null;
+      if (needsReason && !variance) {
         throw new Error(
-          "送货单数量与实收不同时，必须选择差异原因后再保存",
+          "实收 / Shipping List / Invoice 件数不一致时，必须选择差异原因",
         );
       }
 
       const { error } = await supabase
         .from("gr_lines")
-        .update({
-          supplier_claimed_units: claimed,
-          variance_reason: variance,
-        })
+        .update({ variance_reason: variance })
         .eq("id", line.id)
         .eq("goods_receipt_id", goodsReceiptId);
       if (error) throw error;
     }
-    revalidatePath(`/purchasing/receiving/${goodsReceiptId}`);
+    revalidatePath(`/purchasing/receiving/${goodsReceiptId}/match`);
     return { ok: true as const };
   } catch (error) {
     return failure(error);
@@ -295,23 +472,95 @@ export async function submitGoodsReceipt(goodsReceiptId: string) {
     const { supabase } = await requireUser();
     const { data: lines, error: linesError } = await supabase
       .from("gr_lines")
-      .select("ordered_units, supplier_claimed_units, actual_units, lot_no")
+      .select(
+        "ordered_units, supplier_claimed_units, invoice_claimed_units, actual_units, lot_no",
+      )
       .eq("goods_receipt_id", goodsReceiptId);
     if (linesError) throw linesError;
     if (!lines?.length || lines.some((line) => line.lot_no === "__PENDING__")) {
       throw new Error("请先完整保存全部盲收明细（实收、批号）");
     }
+    // 称重品须已录实重
+    const { data: weightCheck, error: weightErr } = await supabase
+      .from("gr_lines")
+      .select(
+        "actual_weight_lb, invoice_claimed_weight_lb, po_lines(products(is_catch_weight, product_families(is_catch_weight)))",
+      )
+      .eq("goods_receipt_id", goodsReceiptId);
+    if (weightErr) throw weightErr;
+    for (const row of weightCheck ?? []) {
+      const poLine = Array.isArray(row.po_lines) ? row.po_lines[0] : row.po_lines;
+      const product = poLine
+        ? Array.isArray(poLine.products)
+          ? poLine.products[0]
+          : poLine.products
+        : null;
+      const family = product
+        ? Array.isArray(product.product_families)
+          ? product.product_families[0]
+          : product.product_families
+        : null;
+      const needsWeight = Boolean(
+        family?.is_catch_weight ?? product?.is_catch_weight,
+      );
+      if (!needsWeight) continue;
+      if (Number(row.actual_weight_lb) <= 0) {
+        throw new Error("称重品请先在盲收页填写实收重量");
+      }
+      if (
+        row.invoice_claimed_weight_lb == null ||
+        Number(row.invoice_claimed_weight_lb) <= 0
+      ) {
+        throw new Error("称重品请先在 Invoice 页填写声称重量");
+      }
+    }
     if (lines.some((line) => Number(line.supplier_claimed_units) <= 0)) {
       throw new Error(
-        "请先由采购录入供应商送货单声称数量，再进行三单核对",
+        "请先录入 Shipping List（送货单）声称数量，再进行单据核对",
       );
     }
-    // 三单核对：PO 数量、供应商送货单数量、仓库盲收数量三者独立比较。
-    const matched = lines.every(
-      (line) =>
-        Number(line.ordered_units) === Number(line.supplier_claimed_units) &&
-        Number(line.supplier_claimed_units) === Number(line.actual_units),
-    );
+    if (lines.some((line) => Number(line.invoice_claimed_units) <= 0)) {
+      throw new Error("请先录入 Invoice（发票）声称数量，再进行单据核对");
+    }
+    const { data: receiptHeader, error: headerErr } = await supabase
+      .from("goods_receipts")
+      .select("supplier_invoice_no")
+      .eq("id", goodsReceiptId)
+      .single();
+    if (headerErr) throw headerErr;
+    if (!receiptHeader.supplier_invoice_no?.trim()) {
+      throw new Error("请先填写供应商发票号");
+    }
+    const { data: fullLines, error: fullErr } = await supabase
+      .from("gr_lines")
+      .select(
+        "ordered_units, supplier_claimed_units, invoice_claimed_units, actual_units, variance_reason",
+      )
+      .eq("goods_receipt_id", goodsReceiptId);
+    if (fullErr) throw fullErr;
+    for (const line of fullLines ?? []) {
+      const actual = Number(line.actual_units);
+      const shipping = Number(line.supplier_claimed_units);
+      const invoice = Number(line.invoice_claimed_units);
+      if (
+        (actual !== shipping || actual !== invoice || shipping !== invoice) &&
+        !line.variance_reason
+      ) {
+        throw new Error(
+          "实收 / Shipping List / Invoice 不一致时，请先在核对页填写差异原因",
+        );
+      }
+    }
+    // 单据核对：PO、Shipping List、Invoice、盲收四者独立比较
+    const matched = (fullLines ?? lines).every((line) => {
+      const ordered = Number(line.ordered_units);
+      const shipping = Number(line.supplier_claimed_units);
+      const invoice = Number(line.invoice_claimed_units);
+      const actual = Number(line.actual_units);
+      return (
+        ordered === shipping && shipping === invoice && invoice === actual
+      );
+    });
     const { error } = await supabase
       .from("goods_receipts")
       .update({ status: matched ? "matched" : "discrepancy" })
@@ -320,6 +569,9 @@ export async function submitGoodsReceipt(goodsReceiptId: string) {
     if (error) throw error;
     revalidatePath("/purchasing/receiving");
     revalidatePath(`/purchasing/receiving/${goodsReceiptId}`);
+    revalidatePath(`/purchasing/receiving/${goodsReceiptId}/delivery-note`);
+    revalidatePath(`/purchasing/receiving/${goodsReceiptId}/invoice`);
+    revalidatePath(`/purchasing/receiving/${goodsReceiptId}/match`);
     return { ok: true as const, matched };
   } catch (error) {
     return failure(error);

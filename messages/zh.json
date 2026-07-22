@@ -21,12 +21,21 @@
   "nav": {
     "dashboard": "首页看板",
     "pos": "采购订单",
-    "receiving": "盲收收货",
+    "receiving": "收货",
+    "receivingBlind": "现场盲收",
+    "receivingShipping": "Shipping List",
+    "receivingInvoice": "Invoice",
+    "receivingMatch": "单据核对",
     "priceAlerts": "成本涨价提醒",
     "suppliers": "供应商",
-    "products": "商品",
+    "productFamilyGroup": "原产品",
+    "productFamilies": "原产品查询",
+    "productFamiliesNew": "新建原产品",
+    "productCategories": "编辑分类",
+    "products": "管理包装 SKU",
     "batches": "批次",
-    "stock": "库存 / ATP",
+    "stock": "查看库存",
+    "stockAdj": "库存调整",
     "replenishment": "FEFO 补货",
     "quarantine": "隔离区",
     "repack": "分装 / 重包",
@@ -51,14 +60,16 @@
     "billingQueue": "待开票队列",
     "creditNoteQueue": "待贷记队列",
     "users": "用户管理",
-    "permissions": "功能权限",
+    "permissions": "用户权限覆盖",
+    "rolePermissions": "角色权限",
+    "auditLog": "操作日志",
     "settings": "系统设置"
   },
   "it": {
     "usersTitle": "用户与角色",
     "usersHint": "IT / Admin 可调整角色与启用状态。功能权限可在「功能权限」页按用户覆盖。",
-    "permissionsTitle": "功能权限",
-    "permissionsHint": "先选用户，再勾选其可用功能。显式关闭会覆盖角色默认权限。",
+    "permissionsTitle": "用户权限覆盖",
+    "permissionsHint": "先选用户，再勾选其可用功能。显式关闭会覆盖角色默认权限。角色默认权限请到「角色权限」页编辑。",
     "role": "角色",
     "active": "启用",
     "save": "保存",
@@ -74,5 +85,22 @@
     "loading": "加载中…",
     "save": "保存",
     "cancel": "取消"
+  },
+  "status": {
+    "gr": {
+      "draft": "草稿",
+      "submitted": "已提交",
+      "matched": "核对一致",
+      "discrepancy": "有差异",
+      "posted": "已过账"
+    },
+    "po": {
+      "draft": "草稿",
+      "issued": "已签发",
+      "partially_received": "部分收货",
+      "received": "已收货",
+      "closed": "已关闭",
+      "cancelled": "已取消"
+    }
   }
 }

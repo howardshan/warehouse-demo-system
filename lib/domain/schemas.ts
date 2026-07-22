@@ -20,6 +20,43 @@ export const CREDIT_STATUSES = [
   "cod_only",
 ] as const;
 
+export const productCategorySchema = z.object({
+  code: z
+    .string()
+    .min(1, "分类编码必填")
+    .transform((value) => value.trim().toUpperCase())
+    .refine(
+      (value) => /^[A-Z0-9]+(?:[_-][A-Z0-9]+)*$/.test(value),
+      "编码须为字母数字（可用 - 或 _）",
+    ),
+  name: z.string().min(1, "分类名称必填"),
+  sort_order: z.coerce.number().int().default(0),
+  is_active: z.boolean().default(true),
+});
+
+export const productFamilySchema = z.object({
+  code: z
+    .string()
+    .min(1, "原产品编码必填")
+    .transform((value) => value.trim().toUpperCase())
+    .refine(
+      (value) => /^[A-Z0-9]+(?:[_-][A-Z0-9]+)*$/.test(value),
+      "编码须为字母数字（可用 - 或 _），例如 GARLIC",
+    ),
+  name: z.string().min(1, "原产品名称必填"),
+  notes: z.string().optional().nullable(),
+  supplier_id: z.string().uuid("请选择供应商"),
+  category_id: z.string().uuid("请选择分类"),
+  purchase_uom: z.enum(ORDERING_UOMS).optional().nullable(),
+  is_catch_weight: z.boolean().default(false),
+  outer_pack_weight_lb: z.coerce
+    .number()
+    .min(0, "外包装重量不能为负")
+    .nullable()
+    .optional(),
+  is_active: z.boolean().default(true),
+});
+
 export const productSchema = z
   .object({
     sku: z
@@ -42,11 +79,42 @@ export const productSchema = z
     shelf_life_days: z.coerce.number().int().positive().nullable().optional(),
     is_active: z.boolean().default(true),
     family_id: z.string().uuid().nullable().optional(),
-    pack_contains_qty: z.coerce.number().positive().default(1),
+    pack_contains_qty: z.coerce.number().positive("转换比必须大于 0"),
     family_code: z.string().optional().nullable(),
     family_name: z.string().optional().nullable(),
+    is_purchasable: z.boolean().default(false),
+    is_sellable: z.boolean().default(true),
+    requires_debox: z.boolean().default(false),
   })
   .superRefine((data, ctx) => {
+    if (data.is_purchasable && data.is_sellable) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["is_purchasable"],
+        message: "采购包装与销售包装须分开建，不可同时勾选",
+      });
+    }
+    if (!data.is_purchasable && !data.is_sellable) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["is_sellable"],
+        message: "须指定为采购包装或销售包装",
+      });
+    }
+    if (!data.family_id) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["family_id"],
+        message: "必须归属原产品",
+      });
+    }
+    if (!(data.pack_contains_qty > 0)) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["pack_contains_qty"],
+        message: "转换比必须大于 0",
+      });
+    }
     if (data.is_catch_weight) {
       if (data.pricing_uom !== "lb") {
         ctx.addIssue({
@@ -127,6 +195,8 @@ export const customerSchema = z
   });
 
 export type ProductInput = z.infer<typeof productSchema>;
+export type ProductFamilyInput = z.infer<typeof productFamilySchema>;
+export type ProductCategoryInput = z.infer<typeof productCategorySchema>;
 export type SupplierInput = z.infer<typeof supplierSchema>;
 export type LocationInput = z.infer<typeof locationSchema>;
 export type ToteInput = z.infer<typeof toteSchema>;

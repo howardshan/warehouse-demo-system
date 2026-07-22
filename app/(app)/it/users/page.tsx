@@ -5,24 +5,13 @@ import { createClient } from "@/lib/supabase/server";
 import { getRequestLocale } from "@/app/actions/i18n";
 import { getDictionary, t } from "@/lib/i18n/dictionaries";
 import { inviteUserAction, updateUserProfileAction } from "@/app/actions/it";
+import { APP_ROLES, APP_ROLE_LABELS } from "@/lib/auth/roles";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-
-const ROLES = [
-  "admin",
-  "it",
-  "purchasing",
-  "warehouse",
-  "sales",
-  "sales_manager",
-  "account",
-  "finance",
-  "driver",
-];
 
 export default async function ItUsersPage() {
   const access = await getSessionAccess();
@@ -61,6 +50,13 @@ export default async function ItUsersPage() {
           <Link href="/it/permissions" className="text-teal-800 hover:underline">
             {t(messages, "nav.permissions")}
           </Link>
+          {" · "}
+          <Link
+            href="/it/role-permissions"
+            className="text-teal-800 hover:underline"
+          >
+            {t(messages, "nav.rolePermissions")}
+          </Link>
         </p>
       </div>
 
@@ -85,9 +81,9 @@ export default async function ItUsersPage() {
             <div>
               <Label>{t(messages, "it.role")}</Label>
               <Select name="role" defaultValue="sales">
-                {ROLES.map((r) => (
+                {APP_ROLES.map((r) => (
                   <option key={r} value={r}>
-                    {r}
+                    {APP_ROLE_LABELS[r]} ({r})
                   </option>
                 ))}
               </Select>
@@ -123,9 +119,9 @@ export default async function ItUsersPage() {
                 <div>
                   <Label>{t(messages, "it.role")}</Label>
                   <Select name="role" defaultValue={u.role}>
-                    {ROLES.map((r) => (
+                    {APP_ROLES.map((r) => (
                       <option key={r} value={r}>
-                        {r}
+                        {APP_ROLE_LABELS[r]} ({r})
                       </option>
                     ))}
                   </Select>

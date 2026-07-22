@@ -1,7 +1,10 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getRequestLocale } from "@/app/actions/i18n";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
+import { getDictionary } from "@/lib/i18n/dictionaries";
+import { statusLabel } from "@/lib/i18n/status";
 import { formatMoney } from "@/lib/utils";
 import { IssuePoButton, PoLineForm } from "../../purchasing-forms";
 
@@ -11,6 +14,8 @@ export default async function PurchaseOrderDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const locale = await getRequestLocale();
+  const messages = getDictionary(locale);
   const supabase = await createClient();
   const [{ data: order }, { data: lines }, { data: products }] = await Promise.all([
     supabase
@@ -26,9 +31,10 @@ export default async function PurchaseOrderDetailPage({
     supabase
       .from("products")
       .select(
-        "id, sku, name, ordering_uom, pricing_uom, current_price, is_catch_weight, avg_weight_lb, pack_contains_qty, family_id, product_families(code, name)",
+        "id, sku, name, ordering_uom, pricing_uom, current_price, is_catch_weight, avg_weight_lb, pack_contains_qty, family_id, is_purchasable, product_families!inner(code, name, purchase_uom, supplier_id)",
       )
       .eq("is_active", true)
+      .eq("is_purchasable", true)
       .order("sku"),
   ]);
   if (!order) notFound();
@@ -36,26 +42,37 @@ export default async function PurchaseOrderDetailPage({
     ? order.suppliers[0]
     : order.suppliers;
 
-  const productOptions = (products ?? []).map((product) => {
-    const family = Array.isArray(product.product_families)
-      ? product.product_families[0]
-      : product.product_families;
-    return {
-      id: product.id,
-      sku: product.sku,
-      name: product.name,
-      ordering_uom: product.ordering_uom,
-      pricing_uom: product.pricing_uom,
-      current_price: Number(product.current_price),
-      is_catch_weight: product.is_catch_weight,
-      avg_weight_lb:
-        product.avg_weight_lb == null ? null : Number(product.avg_weight_lb),
-      pack_contains_qty: Number(product.pack_contains_qty ?? 1),
-      family_id: product.family_id,
-      family_code: family?.code ?? null,
-      family_name: family?.name ?? null,
-    };
-  });
+  const productOptions = (products ?? [])
+    .filter((product) => {
+      const family = Array.isArray(product.product_families)
+        ? product.product_families[0]
+        : product.product_families;
+      // 只可选本 PO 供应商下的原产品包装；未绑供应商的历史数据仍可见
+      return (
+        !family?.supplier_id || family.supplier_id === order.supplier_id
+      );
+    })
+    .map((product) => {
+      const family = Array.isArray(product.product_families)
+        ? product.product_families[0]
+        : product.product_families;
+      return {
+        id: product.id,
+        sku: product.sku,
+        name: product.name,
+        ordering_uom: product.ordering_uom,
+        pricing_uom: product.pricing_uom,
+        current_price: Number(product.current_price),
+        is_catch_weight: product.is_catch_weight,
+        avg_weight_lb:
+          product.avg_weight_lb == null ? null : Number(product.avg_weight_lb),
+        pack_contains_qty: Number(product.pack_contains_qty ?? 1),
+        family_id: product.family_id,
+        family_code: family?.code ?? null,
+        family_name: family?.name ?? null,
+        family_purchase_uom: family?.purchase_uom ?? null,
+      };
+    });
 
   return (
     <div className="space-y-6">
@@ -75,7 +92,7 @@ export default async function PurchaseOrderDetailPage({
                 : "warn"
           }
         >
-          {order.status}
+          {statusLabel(messages, "po", order.status)}
         </Badge>
       </div>
 
@@ -84,8 +101,7 @@ export default async function PurchaseOrderDetailPage({
           <CardHeader>
             <h2 className="text-lg font-semibold">添加采购明细</h2>
             <p className="text-sm text-stone-500">
-              先选原产品，再选订货单位（case / bag / lb）。同族不同包装对应不同
-              SKU，例如大蒜箱装与包装。
+              按本单供应商下的原产品采购包装下单。同一商品不同供应商请在「原产品」分别建档；销售拆包与卖价在商品主数据维护。
             </p>
           </CardHeader>
           <CardBody>

@@ -5,11 +5,57 @@ import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, PanelLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { NAV_MODULES } from "@/lib/modules/nav";
+import {
+  NAV_MODULES,
+  isReceivingStepActive,
+  receivingStepHref,
+  type NavItem,
+} from "@/lib/modules/nav";
 import { useI18n } from "@/components/i18n/provider";
 import { can, canAny } from "@/lib/auth/access-client";
 
 const STORAGE_KEY = "wd_sidebar_collapsed";
+
+function itemMatchesPath(item: NavItem, pathname: string): boolean {
+  if (item.children?.length) {
+    return item.children.some((c) =>
+      childIsActive(c, pathname, item.children!),
+    );
+  }
+  return pathname === item.href || pathname.startsWith(item.href + "/");
+}
+
+function childIsActive(
+  child: NavItem,
+  pathname: string,
+  siblings: NavItem[],
+): boolean {
+  if (child.receivingStep) {
+    return isReceivingStepActive(pathname, child.receivingStep);
+  }
+  return isLeafActive(child.href, pathname, siblings);
+}
+
+function childHref(child: NavItem, pathname: string): string {
+  if (child.receivingStep) {
+    return receivingStepHref(pathname, child.receivingStep);
+  }
+  return child.href;
+}
+
+function isLeafActive(href: string, pathname: string, siblings: NavItem[]) {
+  const exact = pathname === href;
+  const prefix = pathname.startsWith(href + "/");
+  if (!exact && !prefix) return false;
+  // 更长的 sibling href 优先（避免 /families 盖住 /families/new）
+  const longerTakes = siblings.some(
+    (s) =>
+      s.href !== href &&
+      s.href.length > href.length &&
+      (pathname === s.href || pathname.startsWith(s.href + "/")),
+  );
+  return !longerTakes;
+}
 
 export function AppSidebar({
   userEmail,
@@ -48,18 +94,25 @@ export function AppSidebar({
       NAV_MODULES.map((mod) => ({
         ...mod,
         visible: canAny(permissions, mod.anyOf),
-        items: mod.items.filter((item) => can(permissions, item.permission)),
+        items: mod.items
+          .map((item) => {
+            if (!item.children?.length) {
+              return can(permissions, item.permission) ? item : null;
+            }
+            const children = item.children.filter((c) =>
+              can(permissions, c.permission),
+            );
+            if (children.length === 0) return null;
+            return { ...item, children };
+          })
+          .filter((item): item is NavItem => item != null),
       })).filter((m) => m.visible && m.items.length > 0),
     [permissions],
   );
 
   const activeModuleId = useMemo(() => {
     for (const mod of modules) {
-      if (
-        mod.items.some(
-          (i) => pathname === i.href || pathname.startsWith(i.href + "/"),
-        )
-      ) {
+      if (mod.items.some((i) => itemMatchesPath(i, pathname))) {
         return mod.id;
       }
     }
@@ -67,6 +120,18 @@ export function AppSidebar({
   }, [modules, pathname]);
 
   const [openId, setOpenId] = useState<string | null>(activeModuleId);
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    setOpenId(activeModuleId);
+    for (const mod of modules) {
+      for (const item of mod.items) {
+        if (item.children?.length && itemMatchesPath(item, pathname)) {
+          setOpenGroups((prev) => ({ ...prev, [item.href]: true }));
+        }
+      }
+    }
+  }, [activeModuleId, modules, pathname]);
 
   return (
     <aside
@@ -118,12 +183,12 @@ export function AppSidebar({
           </button>
           {modules.map((mod) => {
             const active = activeModuleId === mod.id;
-            const first = mod.items[0];
+            const first = mod.items[0]?.children?.[0] ?? mod.items[0];
             if (!first) return null;
             return (
               <Link
                 key={mod.id}
-                href={first.href}
+                href={childHref(first, pathname)}
                 title={t(mod.labelKey)}
                 className={cn(
                   "flex h-9 w-9 items-center justify-center rounded-md text-xs font-semibold uppercase tracking-wide transition",
@@ -163,9 +228,66 @@ export function AppSidebar({
                 {open && (
                   <div className="mt-0.5 space-y-0.5 pb-1 pl-1">
                     {mod.items.map((item) => {
-                      const active =
-                        pathname === item.href ||
-                        pathname.startsWith(item.href + "/");
+                      if (item.children?.length) {
+                        const groupOpen =
+                          openGroups[item.href] ??
+                          itemMatchesPath(item, pathname);
+                        return (
+                          <div key={item.href} className="pt-0.5">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setOpenGroups((prev) => ({
+                                  ...prev,
+                                  [item.href]: !groupOpen,
+                                }))
+                              }
+                              className={cn(
+                                "flex w-full items-center justify-between rounded-md px-3 py-1.5 text-left text-sm font-medium transition",
+                                itemMatchesPath(item, pathname)
+                                  ? "text-teal-100"
+                                  : "text-stone-300 hover:bg-white/5 hover:text-white",
+                              )}
+                            >
+                              <span>{t(item.labelKey)}</span>
+                              <span className="text-[10px] opacity-70">
+                                {groupOpen ? "−" : "+"}
+                              </span>
+                            </button>
+                            {groupOpen && (
+                              <div className="mt-0.5 space-y-0.5 border-l border-white/10 ml-3 pl-2">
+                                {item.children.map((child) => {
+                                  const active = childIsActive(
+                                    child,
+                                    pathname,
+                                    item.children!,
+                                  );
+                                  return (
+                                    <Link
+                                      key={child.labelKey}
+                                      href={childHref(child, pathname)}
+                                      className={cn(
+                                        "block rounded-md px-2 py-1.5 text-sm transition",
+                                        active
+                                          ? "bg-teal-700/40 text-white"
+                                          : "text-stone-400 hover:bg-white/5 hover:text-white",
+                                      )}
+                                    >
+                                      {t(child.labelKey)}
+                                    </Link>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      }
+
+                      const active = isLeafActive(
+                        item.href,
+                        pathname,
+                        mod.items.filter((i) => !i.children?.length),
+                      );
                       return (
                         <Link
                           key={item.href}

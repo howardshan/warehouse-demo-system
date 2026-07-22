@@ -40,6 +40,7 @@ export default async function SalesOrderDetailPage({
       .from("products")
       .select("id, sku, name, current_price, is_catch_weight")
       .eq("is_active", true)
+      .eq("is_sellable", true)
       .order("sku"),
     supabase
       .from("so_approvals")

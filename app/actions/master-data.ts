@@ -6,6 +6,8 @@ import { createClient } from "@/lib/supabase/server";
 import {
   customerSchema,
   locationSchema,
+  productCategorySchema,
+  productFamilySchema,
   productSchema,
   supplierSchema,
   toteSchema,
@@ -57,6 +59,9 @@ export async function createProduct(raw: unknown) {
     ...rest,
     family_id: familyId,
     pack_contains_qty: parsed.pack_contains_qty ?? 1,
+    is_purchasable: parsed.is_purchasable ?? true,
+    is_sellable: parsed.is_sellable ?? true,
+    requires_debox: parsed.requires_debox ?? false,
     avg_weight_lb: parsed.is_catch_weight ? parsed.avg_weight_lb : null,
     fixed_pick_location_id: parsed.fixed_pick_location_id || null,
     shelf_life_days: parsed.shelf_life_days || null,
@@ -98,12 +103,144 @@ export async function updateProduct(id: string, raw: unknown) {
       is_active: rest.is_active,
       family_id: rest.family_id || null,
       pack_contains_qty: rest.pack_contains_qty ?? 1,
+      is_purchasable: rest.is_purchasable ?? true,
+      is_sellable: rest.is_sellable ?? true,
+      requires_debox: rest.requires_debox ?? false,
     })
     .eq("id", id);
   if (error) return { ok: false as const, error: error.message };
   revalidatePath("/master-data/products");
   revalidatePath(`/master-data/products/${id}`);
+  revalidatePath("/purchasing/families");
   return { ok: true as const };
+}
+
+export async function createProductFamily(raw: unknown) {
+  try {
+    const parsed = productFamilySchema.parse(raw);
+    const { supabase } = await requireUser();
+    const tare = Number(parsed.outer_pack_weight_lb);
+    const { data, error } = await supabase
+      .from("product_families")
+      .insert({
+        code: parsed.code,
+        name: parsed.name.trim(),
+        notes: parsed.notes?.trim() || null,
+        supplier_id: parsed.supplier_id,
+        category_id: parsed.category_id,
+        purchase_uom: parsed.purchase_uom || null,
+        is_catch_weight: parsed.is_catch_weight ?? false,
+        outer_pack_weight_lb:
+          Number.isFinite(tare) && tare > 0 ? tare : null,
+        is_active: parsed.is_active,
+      })
+      .select("id")
+      .single();
+    if (error) return { ok: false as const, error: error.message };
+    revalidatePath("/purchasing/families");
+    revalidatePath("/purchasing/families/new");
+    revalidatePath("/purchasing/categories");
+    revalidatePath("/master-data/products");
+    return { ok: true as const, id: data.id };
+  } catch (error) {
+    return {
+      ok: false as const,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
+export async function updateProductFamily(id: string, raw: unknown) {
+  try {
+    const parsed = productFamilySchema.parse(raw);
+    const { supabase } = await requireUser();
+    const tare = Number(parsed.outer_pack_weight_lb);
+    const { error } = await supabase
+      .from("product_families")
+      .update({
+        code: parsed.code,
+        name: parsed.name.trim(),
+        notes: parsed.notes?.trim() || null,
+        supplier_id: parsed.supplier_id,
+        category_id: parsed.category_id,
+        purchase_uom: parsed.purchase_uom || null,
+        is_catch_weight: parsed.is_catch_weight ?? false,
+        outer_pack_weight_lb:
+          Number.isFinite(tare) && tare > 0 ? tare : null,
+        is_active: parsed.is_active,
+      })
+      .eq("id", id);
+    if (error) return { ok: false as const, error: error.message };
+    // 同步旗下 SKU 的称重标记，避免销售/采购口径不一致
+    const { error: syncErr } = await supabase
+      .from("products")
+      .update({ is_catch_weight: parsed.is_catch_weight ?? false })
+      .eq("family_id", id);
+    if (syncErr) return { ok: false as const, error: syncErr.message };
+    revalidatePath("/purchasing/families");
+    revalidatePath("/purchasing/families/new");
+    revalidatePath("/purchasing/categories");
+    revalidatePath("/master-data/products");
+    return { ok: true as const };
+  } catch (error) {
+    return {
+      ok: false as const,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
+export async function createProductCategory(raw: unknown) {
+  try {
+    const parsed = productCategorySchema.parse(raw);
+    const { supabase } = await requireUser();
+    const { data, error } = await supabase
+      .from("product_categories")
+      .insert({
+        code: parsed.code,
+        name: parsed.name.trim(),
+        sort_order: parsed.sort_order ?? 0,
+        is_active: parsed.is_active,
+      })
+      .select("id")
+      .single();
+    if (error) return { ok: false as const, error: error.message };
+    revalidatePath("/purchasing/categories");
+    revalidatePath("/purchasing/families");
+    revalidatePath("/purchasing/families/new");
+    return { ok: true as const, id: data.id };
+  } catch (error) {
+    return {
+      ok: false as const,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
+export async function updateProductCategory(id: string, raw: unknown) {
+  try {
+    const parsed = productCategorySchema.parse(raw);
+    const { supabase } = await requireUser();
+    const { error } = await supabase
+      .from("product_categories")
+      .update({
+        code: parsed.code,
+        name: parsed.name.trim(),
+        sort_order: parsed.sort_order ?? 0,
+        is_active: parsed.is_active,
+      })
+      .eq("id", id);
+    if (error) return { ok: false as const, error: error.message };
+    revalidatePath("/purchasing/categories");
+    revalidatePath("/purchasing/families");
+    revalidatePath("/purchasing/families/new");
+    return { ok: true as const };
+  } catch (error) {
+    return {
+      ok: false as const,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
 }
 
 export async function createSupplier(raw: unknown) {
