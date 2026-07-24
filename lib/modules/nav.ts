@@ -389,11 +389,6 @@ export const NAV_MODULES: NavModule[] = [
     items: [
       { href: "/it/users", labelKey: "nav.users", permission: "it.users.manage" },
       {
-        href: "/it/permissions",
-        labelKey: "nav.permissions",
-        permission: "it.permissions.manage",
-      },
-      {
         href: "/it/role-permissions",
         labelKey: "nav.rolePermissions",
         permission: "it.permissions.manage",

@@ -45,7 +45,6 @@ export async function updateUserProfile(formData: FormData) {
 
   if (error) return { ok: false as const, error: error.message };
   revalidatePath("/it/users");
-  revalidatePath("/it/permissions");
   void access;
   return { ok: true as const };
 }
@@ -112,7 +111,7 @@ export async function setUserPermissionOverrides(
     if (error) return { ok: false as const, error: error.message };
   }
 
-  revalidatePath("/it/permissions");
+  revalidatePath("/it/users");
   return { ok: true as const };
 }
 
@@ -158,7 +157,7 @@ export async function setRolePermissions(
   }
 
   revalidatePath("/it/role-permissions");
-  revalidatePath("/it/permissions");
+  revalidatePath("/it/users");
   return { ok: true as const, count: finalKeys.length };
 }
 

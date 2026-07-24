@@ -81,7 +81,7 @@
   },
   "it": {
     "usersTitle": "Users & roles",
-    "usersHint": "IT / Admin can change roles and active status. Per-user feature overrides are on the Permissions page.",
+    "usersHint": "IT / Admin can select a user here to edit their role, active status, and individual feature permissions (overriding role defaults). Edit role defaults on the Role Permissions page.",
     "permissionsTitle": "Feature permissions",
     "permissionsHint": "Select a user, then toggle features. Explicit deny overrides role defaults.",
     "role": "Role",
@@ -93,7 +93,9 @@
     "granted": "Grant",
     "denied": "Deny",
     "default": "Role default",
-    "noAccess": "You do not have access to this module"
+    "noAccess": "You do not have access to this module",
+    "saved": "Saved",
+    "permOverrideTitle": "Feature permission overrides"
   },
   "common": {
     "loading": "Loading…",

@@ -2,7 +2,7 @@
 
 > **文档是交付物的一部分。** SQL 唯一真相在 `/supabase/migrations/`。文档只回答「在哪个文件」和「为什么」，不复制 SQL。
 >
-> **当前状态：Phases 1–9 全部实现，迁移范围 `0001`–`0017`。**
+> **当前状态：Phases 1–9 全部实现（迁移 `0001`–`0017`），另有增量迁移至 `0032`（IT 权限、原产品多包装、盲收强化、库存调整、商品分类）。**
 
 ## 阅读顺序（新人 / 另一个 AI）
 
@@ -26,6 +26,7 @@
 | 7 退货 | **完成** | [08-returns](./modules/08-returns.md) |
 | 8 分装追溯 | **完成** | [09-repack-traceability](./modules/09-repack-traceability.md) |
 | 9 看板与系统加固 | **完成** | [views](./schema/views.md), [triggers](./schema/triggers.md), [rls](./schema/rls.md) |
+| 增量（`0018`–`0032`） | **完成** | [01-master-data](./modules/01-master-data.md), [02-purchasing-receiving](./modules/02-purchasing-receiving.md), [03-inventory-locations](./modules/03-inventory-locations.md) |
 
 ## Schema
 

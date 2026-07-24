@@ -12,16 +12,23 @@ import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { PermissionOverrideEditor } from "./permission-override-editor";
 
-export default async function ItUsersPage() {
+export default async function ItUsersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ user?: string }>;
+}) {
   const access = await getSessionAccess();
   const locale = await getRequestLocale();
   const messages = getDictionary(locale);
+  const sp = await searchParams;
 
   if (!can(access.permissions, "it.users.manage")) {
     redirect("/dashboard");
   }
 
+  const canManagePerms = can(access.permissions, "it.permissions.manage");
   const supabase = await createClient();
   const { data: users } = await supabase
     .from("user_profiles")
@@ -41,16 +48,49 @@ export default async function ItUsersPage() {
     emailMap = new Map();
   }
 
+  const list = users ?? [];
+  const selectedId = sp.user || list[0]?.id || "";
+  const selected = list.find((u) => u.id === selectedId) ?? null;
+
+  // 仅在有权限管理权时，为选中用户加载权限点/角色默认/用户覆盖
+  let permissions: { key: string; module: string; description: string }[] = [];
+  let roleDefaultKeys: string[] = [];
+  let overrideMap: Record<string, "grant" | "deny"> = {};
+  if (canManagePerms && selected) {
+    const [{ data: perms }, { data: rolePerms }, { data: overrides }] =
+      await Promise.all([
+        supabase
+          .from("permissions")
+          .select("key, module, description")
+          .order("module")
+          .order("key"),
+        supabase
+          .from("role_permissions")
+          .select("permission_key")
+          .eq("role", selected.role),
+        supabase
+          .from("user_permissions")
+          .select("permission_key, granted")
+          .eq("user_id", selected.id),
+      ]);
+    permissions = perms ?? [];
+    roleDefaultKeys = (rolePerms ?? []).map((r) => r.permission_key);
+    overrideMap = Object.fromEntries(
+      (overrides ?? []).map((o) => [
+        o.permission_key,
+        o.granted ? "grant" : "deny",
+      ]),
+    ) as Record<string, "grant" | "deny">;
+  }
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold">{t(messages, "it.usersTitle")}</h1>
+        <h1 className="text-2xl font-semibold">
+          {t(messages, "it.usersTitle")}
+        </h1>
         <p className="mt-1 text-sm text-stone-500">
           {t(messages, "it.usersHint")}{" "}
-          <Link href="/it/permissions" className="text-teal-800 hover:underline">
-            {t(messages, "nav.permissions")}
-          </Link>
-          {" · "}
           <Link
             href="/it/role-permissions"
             className="text-teal-800 hover:underline"
@@ -65,7 +105,10 @@ export default async function ItUsersPage() {
           <h2 className="font-semibold">Invite / create user</h2>
         </CardHeader>
         <CardBody>
-          <form action={inviteUserAction} className="grid gap-3 md:grid-cols-2 lg:grid-cols-5">
+          <form
+            action={inviteUserAction}
+            className="grid gap-3 md:grid-cols-2 lg:grid-cols-5"
+          >
             <div>
               <Label>Email</Label>
               <Input name="email" type="email" required />
@@ -95,57 +138,141 @@ export default async function ItUsersPage() {
         </CardBody>
       </Card>
 
-      <div className="space-y-3">
-        {(users ?? []).map((u) => (
-          <Card key={u.id}>
-            <CardBody>
-              <form action={updateUserProfileAction} className="grid gap-3 md:grid-cols-5 md:items-end">
-                <input type="hidden" name="user_id" value={u.id} />
-                <div className="md:col-span-2">
-                  <div className="text-sm font-medium">
-                    {u.full_name ?? "—"}{" "}
-                    <Badge tone={u.is_active ? "ok" : "neutral"}>
-                      {u.is_active ? "active" : "off"}
-                    </Badge>
-                  </div>
-                  <div className="font-mono text-xs text-stone-400">
-                    {emailMap.get(u.id) ?? u.id}
-                  </div>
-                  <div className="mt-2">
-                    <Label>Name</Label>
-                    <Input name="full_name" defaultValue={u.full_name ?? ""} />
-                  </div>
+      <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
+        {/* 左：用户列表 */}
+        <div className="space-y-2">
+          <div className="text-xs font-medium uppercase tracking-wide text-stone-400">
+            {t(messages, "it.selectUser")}
+          </div>
+          {list.map((u) => {
+            const isSel = u.id === selectedId;
+            return (
+              <Link
+                key={u.id}
+                href={`/it/users?user=${u.id}`}
+                scroll={false}
+                className={`block rounded-lg border px-3 py-2 transition ${
+                  isSel
+                    ? "border-teal-700 bg-teal-50"
+                    : "border-stone-200 bg-white hover:border-stone-300"
+                }`}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="truncate text-sm font-medium">
+                    {u.full_name ?? "—"}
+                  </span>
+                  <Badge tone={u.is_active ? "ok" : "neutral"}>
+                    {u.is_active ? "active" : "off"}
+                  </Badge>
                 </div>
-                <div>
-                  <Label>{t(messages, "it.role")}</Label>
-                  <Select name="role" defaultValue={u.role}>
-                    {APP_ROLES.map((r) => (
-                      <option key={r} value={r}>
-                        {APP_ROLE_LABELS[r]} ({r})
-                      </option>
-                    ))}
-                  </Select>
+                <div className="truncate font-mono text-xs text-stone-400">
+                  {emailMap.get(u.id) ?? u.id}
                 </div>
-                <div className="flex items-center gap-2 pb-2">
-                  <input
-                    id={`active-${u.id}`}
-                    type="checkbox"
-                    name="is_active"
-                    defaultChecked={u.is_active}
+                <div className="mt-1 text-xs text-teal-800">
+                  {APP_ROLE_LABELS[u.role as keyof typeof APP_ROLE_LABELS] ??
+                    u.role}{" "}
+                  ({u.role})
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+
+        {/* 右：选中用户详情 */}
+        <div className="space-y-4">
+          {selected ? (
+            <>
+              <Card>
+                <CardHeader>
+                  <h2 className="font-semibold">
+                    {selected.full_name ?? emailMap.get(selected.id) ?? selected.id}
+                  </h2>
+                  <p className="font-mono text-xs text-stone-400">
+                    {emailMap.get(selected.id) ?? selected.id}
+                  </p>
+                </CardHeader>
+                <CardBody>
+                  <form
+                    action={updateUserProfileAction}
+                    className="grid gap-3 md:grid-cols-4 md:items-end"
+                  >
+                    <input type="hidden" name="user_id" value={selected.id} />
+                    <div className="md:col-span-2">
+                      <Label>Name</Label>
+                      <Input
+                        name="full_name"
+                        defaultValue={selected.full_name ?? ""}
+                      />
+                    </div>
+                    <div>
+                      <Label>{t(messages, "it.role")}</Label>
+                      <Select name="role" defaultValue={selected.role}>
+                        {APP_ROLES.map((r) => (
+                          <option key={r} value={r}>
+                            {APP_ROLE_LABELS[r]} ({r})
+                          </option>
+                        ))}
+                      </Select>
+                    </div>
+                    <div className="flex items-center gap-2 pb-2">
+                      <input
+                        id={`active-${selected.id}`}
+                        type="checkbox"
+                        name="is_active"
+                        defaultChecked={selected.is_active}
+                      />
+                      <Label htmlFor={`active-${selected.id}`} className="mb-0">
+                        {t(messages, "it.active")}
+                      </Label>
+                    </div>
+                    <div className="md:col-span-4">
+                      <Button type="submit" size="sm">
+                        {t(messages, "it.save")}
+                      </Button>
+                    </div>
+                  </form>
+                </CardBody>
+              </Card>
+
+              {canManagePerms && (
+                <div className="space-y-2">
+                  <div>
+                    <h2 className="font-semibold">
+                      {t(messages, "it.permOverrideTitle")}
+                    </h2>
+                    <p className="text-sm text-stone-500">
+                      {t(messages, "it.permissionsHint")}
+                    </p>
+                  </div>
+                  <PermissionOverrideEditor
+                    key={selected.id}
+                    selectedUserId={selected.id}
+                    permissions={permissions}
+                    roleDefaultKeys={roleDefaultKeys}
+                    overrides={overrideMap}
+                    labels={{
+                      module: t(messages, "it.module"),
+                      permission: t(messages, "it.permission"),
+                      granted: t(messages, "it.granted"),
+                      denied: t(messages, "it.denied"),
+                      default: t(messages, "it.default"),
+                      save: t(messages, "it.save"),
+                      saved: t(messages, "it.saved"),
+                    }}
                   />
-                  <Label htmlFor={`active-${u.id}`} className="mb-0">
-                    {t(messages, "it.active")}
-                  </Label>
                 </div>
-                <div>
-                  <Button type="submit" size="sm">
-                    {t(messages, "it.save")}
-                  </Button>
-                </div>
-              </form>
-            </CardBody>
-          </Card>
-        ))}
+              )}
+            </>
+          ) : (
+            <Card>
+              <CardBody>
+                <p className="text-sm text-stone-500">
+                  {t(messages, "it.selectUser")}
+                </p>
+              </CardBody>
+            </Card>
+          )}
+        </div>
       </div>
     </div>
   );
