@@ -47,14 +47,14 @@ export default async function RolePermissionsPage({
     <div className="space-y-6">
       <div>
         <Link
-          href="/it/permissions"
+          href="/it/users"
           className="text-sm text-teal-800 hover:underline"
         >
-          ← 用户功能权限覆盖
+          ← 用户管理（角色与功能权限）
         </Link>
         <h1 className="mt-2 text-2xl font-semibold">角色权限</h1>
         <p className="mt-1 text-sm text-stone-500">
-          为用户管理中可选的每个角色配置默认功能权限。用户级覆盖请在「功能权限」页设置。
+          为用户管理中可选的每个角色配置默认功能权限。用户级覆盖请在「用户管理」页设置。
         </p>
       </div>
 

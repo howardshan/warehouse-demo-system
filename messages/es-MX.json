@@ -81,7 +81,7 @@
   },
   "it": {
     "usersTitle": "Usuarios y roles",
-    "usersHint": "TI / Admin pueden cambiar roles y estado. Los permisos por usuario están en la página de Permisos.",
+    "usersHint": "TI / Admin pueden seleccionar un usuario aquí para editar su rol, estado y permisos de función individuales (anulando los del rol). Edite los del rol en la página Permisos de Rol.",
     "permissionsTitle": "Permisos de funciones",
     "permissionsHint": "Elija un usuario y active funciones. Denegar explícito anula el rol.",
     "role": "Rol",
@@ -93,7 +93,9 @@
     "granted": "Conceder",
     "denied": "Denegar",
     "default": "Por defecto del rol",
-    "noAccess": "No tiene acceso a este módulo"
+    "noAccess": "No tiene acceso a este módulo",
+    "saved": "Guardado",
+    "permOverrideTitle": "Anulaciones de permisos"
   },
   "common": {
     "loading": "Cargando…",

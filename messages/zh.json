@@ -81,7 +81,7 @@
   },
   "it": {
     "usersTitle": "用户与角色",
-    "usersHint": "IT / Admin 可调整角色与启用状态。功能权限可在「功能权限」页按用户覆盖。",
+    "usersHint": "IT / Admin 可在此选择用户，直接编辑其角色、启用状态与单独的功能权限（覆盖角色默认）。角色默认权限请到「角色权限」页编辑。",
     "permissionsTitle": "用户权限覆盖",
     "permissionsHint": "先选用户，再勾选其可用功能。显式关闭会覆盖角色默认权限。角色默认权限请到「角色权限」页编辑。",
     "role": "角色",
@@ -93,7 +93,9 @@
     "granted": "授予",
     "denied": "收回",
     "default": "角色默认",
-    "noAccess": "无权限访问此模块"
+    "noAccess": "无权限访问此模块",
+    "saved": "已保存",
+    "permOverrideTitle": "功能权限覆盖"
   },
   "common": {
     "loading": "加载中…",
