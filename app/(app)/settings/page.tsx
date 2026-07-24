@@ -1,8 +1,15 @@
+import { redirect } from "next/navigation";
+import { getSessionAccess, can } from "@/lib/auth/access";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { SettingRow } from "./setting-row";
 
 export default async function SettingsPage() {
+  const access = await getSessionAccess();
+  if (!can(access.permissions, "master.settings.write")) {
+    redirect("/dashboard");
+  }
+
   const supabase = await createClient();
   const { data: settings } = await supabase
     .from("settings")
@@ -14,7 +21,7 @@ export default async function SettingsPage() {
       <div>
         <h1 className="text-2xl font-semibold">系统设置</h1>
         <p className="mt-1 text-sm text-stone-500">
-          只有 admin 可写（RLS）。阈值改动会影响毛利护栏、成本提醒、信用预警。
+          需要「系统设置」权限（master.settings.write）。阈值改动会影响毛利护栏、成本提醒、信用预警。
         </p>
       </div>
       <Card>
