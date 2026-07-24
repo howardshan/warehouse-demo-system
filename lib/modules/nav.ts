@@ -406,24 +406,3 @@ export const NAV_MODULES: NavModule[] = [
     ],
   },
 ];
-
-/** 路径 → 所需权限（用于 layout 守卫；满足任一即可） */
-export function requiredPermissionsForPath(pathname: string): string[] | null {
-  if (pathname === "/dashboard" || pathname.startsWith("/dashboard")) {
-    return ["dashboard.view"];
-  }
-  let best: { href: string; permission: string } | null = null;
-  for (const mod of NAV_MODULES) {
-    for (const item of mod.items) {
-      const candidates = item.children?.length ? [...item.children, item] : [item];
-      for (const cand of candidates) {
-        if (pathname === cand.href || pathname.startsWith(cand.href + "/")) {
-          if (!best || cand.href.length > best.href.length) {
-            best = { href: cand.href, permission: cand.permission };
-          }
-        }
-      }
-    }
-  }
-  return best ? [best.permission] : null;
-}

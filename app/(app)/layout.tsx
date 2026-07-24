@@ -1,13 +1,11 @@
 import { redirect } from "next/navigation";
-import { getSessionAccess, can } from "@/lib/auth/access";
+import { getSessionAccess } from "@/lib/auth/access";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { signOut } from "@/app/actions/master-data";
 import { Button } from "@/components/ui/button";
 import { I18nProvider, LanguageSwitcher } from "@/components/i18n/provider";
 import { getRequestLocale } from "@/app/actions/i18n";
 import { getDictionary, t } from "@/lib/i18n/dictionaries";
-import { requiredPermissionsForPath } from "@/lib/modules/nav";
-import { headers } from "next/headers";
 
 export default async function AppLayout({
   children,
@@ -18,26 +16,7 @@ export default async function AppLayout({
   const locale = await getRequestLocale();
   const messages = getDictionary(locale);
 
-  const headerList = await headers();
-  const pathname =
-    headerList.get("x-pathname") ||
-    headerList.get("x-invoke-path") ||
-    "";
-
-  // Soft gate: if middleware set path and user lacks permission
-  if (pathname && access.user) {
-    const needed = requiredPermissionsForPath(pathname);
-    if (
-      needed &&
-      needed.length > 0 &&
-      !needed.some((k) => can(access.permissions, k)) &&
-      pathname !== "/dashboard"
-    ) {
-      // allow render of no-access only via dashboard redirect in pages;
-      // layout still shows shell
-    }
-  }
-
+  // 登录门禁在此；具体页面的功能权限由各 page 用 can()/redirect 守卫。
   if (!access.user) {
     redirect("/login");
   }
