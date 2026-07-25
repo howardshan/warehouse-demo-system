@@ -95,7 +95,12 @@
     "default": "Por defecto del rol",
     "noAccess": "No tiene acceso a este módulo",
     "saved": "Guardado",
-    "permOverrideTitle": "Anulaciones de permisos"
+    "permOverrideTitle": "Anulaciones de permisos",
+    "resetPassword": "Restablecer contraseña",
+    "newPassword": "Nueva contraseña",
+    "resetPasswordDone": "Contraseña restablecida",
+    "lastOverrideEdit": "Última edición",
+    "profile": "Perfil y rol"
   },
   "common": {
     "loading": "Cargando…",
