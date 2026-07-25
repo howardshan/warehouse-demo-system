@@ -270,6 +270,7 @@ export const NAV_MODULES: NavModule[] = [
       "warehouse.weighing.write",
       "warehouse.shipping.write",
       "warehouse.returns.write",
+      "warehouse.routes.write",
     ],
     items: [
       {
@@ -296,6 +297,11 @@ export const NAV_MODULES: NavModule[] = [
         href: "/warehouse/shipping",
         labelKey: "nav.shipping",
         permission: "warehouse.shipping.write",
+      },
+      {
+        href: "/master-data/routes",
+        labelKey: "nav.routes",
+        permission: "warehouse.routes.write",
       },
       { href: "/delivery/trips", labelKey: "nav.trips", permission: "warehouse.shipping.write" },
       { href: "/delivery/pod", labelKey: "nav.pod", permission: "warehouse.shipping.write" },

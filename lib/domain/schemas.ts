@@ -179,6 +179,8 @@ export const customerSchema = z
     sales_permit_url: z.string().url().optional().nullable().or(z.literal("")),
     sales_permit_expiry: z.string().optional().nullable(),
     delivery_route: z.string().optional().nullable(),
+    route_id: z.string().uuid().optional().nullable(),
+    route_stop_seq: z.coerce.number().int().positive().optional().nullable(),
     is_active: z.boolean().default(true),
     default_address: z.string().optional().nullable(),
   })
@@ -194,6 +196,19 @@ export const customerSchema = z
     }
   });
 
+/** 配送路线：0=周日…6=周六（对齐 JS Date.getDay）。 */
+export const WEEKDAYS = [0, 1, 2, 3, 4, 5, 6] as const;
+
+export const routeSchema = z.object({
+  code: z.string().min(1),
+  name: z.string().min(1),
+  delivery_weekday: z.coerce.number().int().min(0).max(6),
+  default_vehicle: z.string().optional().nullable(),
+  // "HH:MM" 或空
+  cutoff_time: z.string().optional().nullable(),
+  is_active: z.boolean().default(true),
+});
+
 export type ProductInput = z.infer<typeof productSchema>;
 export type ProductFamilyInput = z.infer<typeof productFamilySchema>;
 export type ProductCategoryInput = z.infer<typeof productCategorySchema>;
@@ -201,3 +216,4 @@ export type SupplierInput = z.infer<typeof supplierSchema>;
 export type LocationInput = z.infer<typeof locationSchema>;
 export type ToteInput = z.infer<typeof toteSchema>;
 export type CustomerInput = z.infer<typeof customerSchema>;
+export type RouteInput = z.infer<typeof routeSchema>;

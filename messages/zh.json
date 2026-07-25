@@ -77,7 +77,8 @@
     "permissions": "用户权限覆盖",
     "rolePermissions": "角色权限",
     "auditLog": "操作日志",
-    "settings": "系统设置"
+    "settings": "系统设置",
+    "routes": "配送路线"
   },
   "it": {
     "usersTitle": "用户与角色",
