@@ -95,7 +95,12 @@
     "default": "Role default",
     "noAccess": "You do not have access to this module",
     "saved": "Saved",
-    "permOverrideTitle": "Feature permission overrides"
+    "permOverrideTitle": "Feature permission overrides",
+    "resetPassword": "Reset password",
+    "newPassword": "New password",
+    "resetPasswordDone": "Password reset",
+    "lastOverrideEdit": "Last edited",
+    "profile": "Profile & role"
   },
   "common": {
     "loading": "Loading…",

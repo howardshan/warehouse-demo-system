@@ -95,7 +95,12 @@
     "default": "角色默认",
     "noAccess": "无权限访问此模块",
     "saved": "已保存",
-    "permOverrideTitle": "功能权限覆盖"
+    "permOverrideTitle": "功能权限覆盖",
+    "resetPassword": "重置密码",
+    "newPassword": "新密码",
+    "resetPasswordDone": "密码已重置",
+    "lastOverrideEdit": "上次修改",
+    "profile": "资料与角色"
   },
   "common": {
     "loading": "加载中…",

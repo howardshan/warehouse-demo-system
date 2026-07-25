@@ -13,6 +13,7 @@ import { Select } from "@/components/ui/select";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PermissionOverrideEditor } from "./permission-override-editor";
+import { ResetPasswordForm } from "./reset-password-form";
 
 export default async function ItUsersPage({
   searchParams,
@@ -52,10 +53,17 @@ export default async function ItUsersPage({
   const selectedId = sp.user || list[0]?.id || "";
   const selected = list.find((u) => u.id === selectedId) ?? null;
 
+  // id → 姓名，用于把覆盖的 updated_by 解析成可读名字
+  const nameById = new Map<string, string>();
+  for (const u of list) {
+    nameById.set(u.id, u.full_name ?? emailMap.get(u.id) ?? u.id);
+  }
+
   // 仅在有权限管理权时，为选中用户加载权限点/角色默认/用户覆盖
   let permissions: { key: string; module: string; description: string }[] = [];
   let roleDefaultKeys: string[] = [];
   let overrideMap: Record<string, "grant" | "deny"> = {};
+  let lastOverrideEdit: { by: string; at: string } | null = null;
   if (canManagePerms && selected) {
     const [{ data: perms }, { data: rolePerms }, { data: overrides }] =
       await Promise.all([
@@ -70,7 +78,7 @@ export default async function ItUsersPage({
           .eq("role", selected.role),
         supabase
           .from("user_permissions")
-          .select("permission_key, granted")
+          .select("permission_key, granted, updated_by, updated_at")
           .eq("user_id", selected.id),
       ]);
     permissions = perms ?? [];
@@ -81,6 +89,18 @@ export default async function ItUsersPage({
         o.granted ? "grant" : "deny",
       ]),
     ) as Record<string, "grant" | "deny">;
+    // 覆盖由 setUserPermissionOverrides 整体重写，所有行同一 updated_at/by
+    const latest = (overrides ?? [])
+      .filter((o) => o.updated_at)
+      .sort((a, b) => (a.updated_at! < b.updated_at! ? 1 : -1))[0];
+    if (latest) {
+      lastOverrideEdit = {
+        by: latest.updated_by
+          ? nameById.get(latest.updated_by) ?? latest.updated_by
+          : "—",
+        at: new Date(latest.updated_at as string).toLocaleString(),
+      };
+    }
   }
 
   return (
@@ -234,6 +254,25 @@ export default async function ItUsersPage({
                 </CardBody>
               </Card>
 
+              <Card>
+                <CardHeader>
+                  <h2 className="font-semibold">
+                    {t(messages, "it.resetPassword")}
+                  </h2>
+                </CardHeader>
+                <CardBody>
+                  <ResetPasswordForm
+                    key={selected.id}
+                    userId={selected.id}
+                    labels={{
+                      newPassword: t(messages, "it.newPassword"),
+                      reset: t(messages, "it.resetPassword"),
+                      done: t(messages, "it.resetPasswordDone"),
+                    }}
+                  />
+                </CardBody>
+              </Card>
+
               {canManagePerms && (
                 <div className="space-y-2">
                   <div>
@@ -243,6 +282,12 @@ export default async function ItUsersPage({
                     <p className="text-sm text-stone-500">
                       {t(messages, "it.permissionsHint")}
                     </p>
+                    {lastOverrideEdit && (
+                      <p className="mt-1 text-xs text-stone-400">
+                        {t(messages, "it.lastOverrideEdit")}:{" "}
+                        {lastOverrideEdit.by} · {lastOverrideEdit.at}
+                      </p>
+                    )}
                   </div>
                   <PermissionOverrideEditor
                     key={selected.id}
