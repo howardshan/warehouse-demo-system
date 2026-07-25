@@ -8,7 +8,13 @@ import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 
-type Perm = { key: string; module: string; description: string };
+type Perm = {
+  key: string;
+  module: string;
+  moduleLabel: string;
+  name: string;
+  desc: string;
+};
 
 export function RolePermissionsEditor({
   roles,
@@ -74,8 +80,8 @@ export function RolePermissionsEditor({
       {byModule.map(([module, perms]) => (
         <Card key={module}>
           <CardHeader className="flex flex-row items-center justify-between gap-3">
-            <h2 className="font-semibold uppercase tracking-wide text-teal-900">
-              {module}
+            <h2 className="font-semibold tracking-wide text-teal-900">
+              {perms[0]?.moduleLabel ?? module}
             </h2>
             {!isAdmin && (
               <div className="flex gap-2 text-xs">
@@ -127,11 +133,16 @@ export function RolePermissionsEditor({
                   }
                 />
                 <span>
-                  <span className="font-mono text-xs text-teal-900">
-                    {p.key}
+                  <span className="block text-sm font-medium text-stone-800">
+                    {p.name}
                   </span>
-                  <span className="mt-0.5 block text-sm text-stone-600">
-                    {p.description}
+                  {p.desc && (
+                    <span className="mt-0.5 block text-xs text-stone-500">
+                      {p.desc}
+                    </span>
+                  )}
+                  <span className="mt-0.5 block font-mono text-[11px] text-stone-400">
+                    {p.key}
                   </span>
                 </span>
               </label>

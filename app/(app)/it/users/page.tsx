@@ -12,6 +12,11 @@ import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import {
+  permissionLabel,
+  moduleLabel,
+  moduleRank,
+} from "@/lib/auth/permission-labels";
 import { PermissionOverrideEditor } from "./permission-override-editor";
 import { ResetPasswordForm } from "./reset-password-form";
 import { ProfileForm } from "./profile-form";
@@ -61,7 +66,13 @@ export default async function ItUsersPage({
   }
 
   // 仅在有权限管理权时，为选中用户加载权限点/角色默认/用户覆盖
-  let permissions: { key: string; module: string; description: string }[] = [];
+  let permissions: {
+    key: string;
+    module: string;
+    moduleLabel: string;
+    name: string;
+    desc: string;
+  }[] = [];
   let roleDefaultKeys: string[] = [];
   let overrideMap: Record<string, "grant" | "deny"> = {};
   let lastOverrideEdit: { by: string; at: string } | null = null;
@@ -82,7 +93,22 @@ export default async function ItUsersPage({
           .select("permission_key, granted, updated_by, updated_at")
           .eq("user_id", selected.id),
       ]);
-    permissions = perms ?? [];
+    permissions = (perms ?? [])
+      .map((p) => {
+        const l = permissionLabel(p.key, locale);
+        return {
+          key: p.key,
+          module: p.module,
+          moduleLabel: moduleLabel(p.module, locale),
+          name: l.name,
+          desc: l.desc,
+        };
+      })
+      .sort(
+        (a, b) =>
+          moduleRank(a.module) - moduleRank(b.module) ||
+          a.key.localeCompare(b.key),
+      );
     roleDefaultKeys = (rolePerms ?? []).map((r) => r.permission_key);
     overrideMap = Object.fromEntries(
       (overrides ?? []).map((o) => [

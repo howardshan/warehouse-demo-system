@@ -3,6 +3,12 @@ import { redirect } from "next/navigation";
 import { getSessionAccess, can } from "@/lib/auth/access";
 import { APP_ROLES, APP_ROLE_LABELS, isAppRole } from "@/lib/auth/roles";
 import { createClient } from "@/lib/supabase/server";
+import { getRequestLocale } from "@/app/actions/i18n";
+import {
+  permissionLabel,
+  moduleLabel,
+  moduleRank,
+} from "@/lib/auth/permission-labels";
 import { RolePermissionsEditor } from "./role-permissions-editor";
 
 export default async function RolePermissionsPage({
@@ -18,12 +24,13 @@ export default async function RolePermissionsPage({
   const sp = await searchParams;
   const rawRole = sp.role ?? "";
   const selectedRole = isAppRole(rawRole) ? rawRole : "purchasing";
+  const locale = await getRequestLocale();
 
   const supabase = await createClient();
   const [{ data: permissions }, { data: rolePerms }] = await Promise.all([
     supabase
       .from("permissions")
-      .select("key, module, description")
+      .select("key, module")
       .order("module")
       .order("key"),
     supabase
@@ -31,6 +38,23 @@ export default async function RolePermissionsPage({
       .select("permission_key")
       .eq("role", selectedRole),
   ]);
+
+  const enrichedPermissions = (permissions ?? [])
+    .map((p) => {
+      const l = permissionLabel(p.key, locale);
+      return {
+        key: p.key,
+        module: p.module,
+        moduleLabel: moduleLabel(p.module, locale),
+        name: l.name,
+        desc: l.desc,
+      };
+    })
+    .sort(
+      (a, b) =>
+        moduleRank(a.module) - moduleRank(b.module) ||
+        a.key.localeCompare(b.key),
+    );
 
   const grantedKeys = (rolePerms ?? []).map((r) => r.permission_key);
 
@@ -96,7 +120,7 @@ export default async function RolePermissionsPage({
         key={selectedRole}
         roles={[...APP_ROLES]}
         selectedRole={selectedRole}
-        permissions={permissions ?? []}
+        permissions={enrichedPermissions}
         grantedKeys={grantedKeys}
       />
     </div>
