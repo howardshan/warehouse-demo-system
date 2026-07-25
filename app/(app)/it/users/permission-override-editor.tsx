@@ -3,6 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { setUserPermissionOverrides } from "@/app/actions/it";
+import { useToast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
@@ -28,9 +29,8 @@ export function PermissionOverrideEditor({
   labels: Record<string, string>;
 }) {
   const router = useRouter();
+  const { notify } = useToast();
   const [pending, start] = useTransition();
-  const [error, setError] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
   const [states, setStates] = useState<Record<string, State>>(() => {
     const map: Record<string, State> = {};
     for (const p of permissions) map[p.key] = overrides[p.key] ?? "default";
@@ -73,13 +73,12 @@ export function PermissionOverrideEditor({
                   </div>
                   <Select
                     value={states[p.key] ?? "default"}
-                    onChange={(e) => {
-                      setSaved(false);
+                    onChange={(e) =>
                       setStates((s) => ({
                         ...s,
                         [p.key]: e.target.value as State,
-                      }));
-                    }}
+                      }))
+                    }
                   >
                     <option value="default">
                       {labels.default}
@@ -98,8 +97,6 @@ export function PermissionOverrideEditor({
         <Button
           disabled={pending || !selectedUserId}
           onClick={() => {
-            setError(null);
-            setSaved(false);
             start(async () => {
               const entries = Object.entries(states).map(([key, state]) => ({
                 key,
@@ -109,9 +106,9 @@ export function PermissionOverrideEditor({
                 selectedUserId,
                 entries,
               );
-              if (!res.ok) setError(res.error);
+              if (!res.ok) notify(res.error, "error");
               else {
-                setSaved(true);
+                notify(labels.saved ?? "✓", "success");
                 router.refresh();
               }
             });
@@ -119,10 +116,6 @@ export function PermissionOverrideEditor({
         >
           {pending ? "…" : labels.save}
         </Button>
-        {error && <span className="text-sm text-red-700">{error}</span>}
-        {saved && !error && (
-          <span className="text-sm text-teal-700">{labels.saved ?? "✓"}</span>
-        )}
       </div>
     </div>
   );
