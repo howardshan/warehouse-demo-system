@@ -100,7 +100,22 @@
     "newPassword": "Nueva contraseña",
     "resetPasswordDone": "Contraseña restablecida",
     "lastOverrideEdit": "Última edición",
-    "profile": "Perfil y rol"
+    "profile": "Perfil y rol",
+    "rolePermsTitle": "Permisos de rol",
+    "rolePermsHint": "Configure los permisos de función por defecto para cada rol disponible en la gestión de usuarios. Las anulaciones por usuario se definen en la página de Gestión de usuarios.",
+    "backToUsers": "Gestión de usuarios (roles y permisos)",
+    "roleCode": "Código",
+    "defaultPermCount": "Permisos por defecto",
+    "actions": "Acciones",
+    "edit": "Editar",
+    "selectRole": "Seleccionar rol",
+    "selected": "Seleccionados",
+    "adminAlwaysAll": "El administrador siempre tiene todos los permisos",
+    "selectAllModule": "Seleccionar todo",
+    "clear": "Limpiar",
+    "saving": "Guardando…",
+    "adminNotEditable": "Los permisos de admin son fijos",
+    "saveRolePerms": "Guardar permisos de rol"
   },
   "common": {
     "loading": "Cargando…",
@@ -123,5 +138,16 @@
       "closed": "Cerrado",
       "cancelled": "Cancelado"
     }
+  },
+  "roles": {
+    "admin": "Administrador",
+    "it": "TI",
+    "purchasing": "Compras",
+    "warehouse": "Almacén",
+    "sales": "Ventas",
+    "sales_manager": "Gerente de ventas",
+    "account": "Cuentas",
+    "finance": "Finanzas",
+    "driver": "Chofer"
   }
 }

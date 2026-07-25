@@ -3,12 +3,19 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { setRolePermissions } from "@/app/actions/it";
-import { APP_ROLE_LABELS, type AppRole } from "@/lib/auth/roles";
+import { type AppRole } from "@/lib/auth/roles";
+import { useI18n } from "@/components/i18n/provider";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 
-type Perm = { key: string; module: string; description: string };
+type Perm = {
+  key: string;
+  module: string;
+  moduleLabel: string;
+  name: string;
+  desc: string;
+};
 
 export function RolePermissionsEditor({
   roles,
@@ -22,6 +29,7 @@ export function RolePermissionsEditor({
   grantedKeys: string[];
 }) {
   const router = useRouter();
+  const { t } = useI18n();
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [checked, setChecked] = useState<Record<string, boolean>>(() => {
@@ -50,7 +58,7 @@ export function RolePermissionsEditor({
       <div className="flex flex-wrap items-end gap-4">
         <div className="max-w-xs">
           <label className="mb-1 block text-sm font-medium text-stone-700">
-            选择角色
+            {t("it.selectRole")}
           </label>
           <Select
             value={selectedRole}
@@ -60,22 +68,22 @@ export function RolePermissionsEditor({
           >
             {roles.map((r) => (
               <option key={r} value={r}>
-                {APP_ROLE_LABELS[r]} ({r})
+                {t("roles." + r)}
               </option>
             ))}
           </Select>
         </div>
         <p className="pb-2 text-sm text-stone-500">
-          已选 {selectedCount} / {permissions.length} 项
-          {isAdmin && " · 管理员始终拥有全部权限"}
+          {t("it.selected")} {selectedCount} / {permissions.length}
+          {isAdmin && ` · ${t("it.adminAlwaysAll")}`}
         </p>
       </div>
 
       {byModule.map(([module, perms]) => (
         <Card key={module}>
           <CardHeader className="flex flex-row items-center justify-between gap-3">
-            <h2 className="font-semibold uppercase tracking-wide text-teal-900">
-              {module}
+            <h2 className="font-semibold tracking-wide text-teal-900">
+              {perms[0]?.moduleLabel ?? module}
             </h2>
             {!isAdmin && (
               <div className="flex gap-2 text-xs">
@@ -90,7 +98,7 @@ export function RolePermissionsEditor({
                     })
                   }
                 >
-                  全选本模块
+                  {t("it.selectAllModule")}
                 </button>
                 <button
                   type="button"
@@ -103,7 +111,7 @@ export function RolePermissionsEditor({
                     })
                   }
                 >
-                  清空
+                  {t("it.clear")}
                 </button>
               </div>
             )}
@@ -127,11 +135,16 @@ export function RolePermissionsEditor({
                   }
                 />
                 <span>
-                  <span className="font-mono text-xs text-teal-900">
-                    {p.key}
+                  <span className="block text-sm font-medium text-stone-800">
+                    {p.name}
                   </span>
-                  <span className="mt-0.5 block text-sm text-stone-600">
-                    {p.description}
+                  {p.desc && (
+                    <span className="mt-0.5 block text-xs text-stone-500">
+                      {p.desc}
+                    </span>
+                  )}
+                  <span className="mt-0.5 block font-mono text-[11px] text-stone-400">
+                    {p.key}
                   </span>
                 </span>
               </label>
@@ -156,7 +169,11 @@ export function RolePermissionsEditor({
           });
         }}
       >
-        {pending ? "保存中…" : isAdmin ? "管理员权限不可改" : "保存角色权限"}
+        {pending
+          ? t("it.saving")
+          : isAdmin
+            ? t("it.adminNotEditable")
+            : t("it.saveRolePerms")}
       </Button>
     </div>
   );

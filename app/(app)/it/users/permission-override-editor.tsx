@@ -8,7 +8,13 @@ import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 
-type Perm = { key: string; module: string; description: string };
+type Perm = {
+  key: string;
+  module: string;
+  moduleLabel: string;
+  name: string;
+  desc: string;
+};
 type State = "default" | "grant" | "deny";
 
 /**
@@ -52,8 +58,8 @@ export function PermissionOverrideEditor({
       {byModule.map(([module, perms]) => (
         <Card key={module}>
           <CardHeader>
-            <h3 className="text-sm font-semibold uppercase tracking-wide text-teal-900">
-              {labels.module}: {module}
+            <h3 className="text-sm font-semibold tracking-wide text-teal-900">
+              {perms[0]?.moduleLabel ?? module}
             </h3>
           </CardHeader>
           <CardBody className="space-y-1">
@@ -65,10 +71,14 @@ export function PermissionOverrideEditor({
                   className="grid gap-2 border-b border-stone-50 py-2 md:grid-cols-[1fr_180px] md:items-center"
                 >
                   <div>
-                    <div className="font-mono text-xs text-teal-900">{p.key}</div>
-                    <div className="text-sm text-stone-600">{p.description}</div>
-                    <div className="text-xs text-stone-400">
-                      {labels.default}: {isDefault ? "✓" : "—"}
+                    <div className="text-sm font-medium text-stone-800">
+                      {p.name}
+                    </div>
+                    {p.desc && (
+                      <div className="text-xs text-stone-500">{p.desc}</div>
+                    )}
+                    <div className="mt-0.5 font-mono text-[11px] text-stone-400">
+                      {p.key} · {labels.default}: {isDefault ? "✓" : "—"}
                     </div>
                   </div>
                   <Select
