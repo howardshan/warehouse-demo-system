@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getRequestLocale } from "@/app/actions/i18n";
 import { getDictionary, t } from "@/lib/i18n/dictionaries";
 import { inviteUserAction } from "@/app/actions/it";
-import { APP_ROLES, APP_ROLE_LABELS } from "@/lib/auth/roles";
+import { APP_ROLES } from "@/lib/auth/roles";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -173,7 +173,7 @@ export default async function ItUsersPage({
               <Select name="role" defaultValue="sales">
                 {APP_ROLES.map((r) => (
                   <option key={r} value={r}>
-                    {APP_ROLE_LABELS[r]} ({r})
+                    {t(messages, "roles." + r)}
                   </option>
                 ))}
               </Select>
@@ -216,9 +216,7 @@ export default async function ItUsersPage({
                   {emailMap.get(u.id) ?? u.id}
                 </div>
                 <div className="mt-1 text-xs text-teal-800">
-                  {APP_ROLE_LABELS[u.role as keyof typeof APP_ROLE_LABELS] ??
-                    u.role}{" "}
-                  ({u.role})
+                  {t(messages, "roles." + u.role, u.role)}
                 </div>
               </Link>
             );

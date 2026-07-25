@@ -100,7 +100,22 @@
     "newPassword": "New password",
     "resetPasswordDone": "Password reset",
     "lastOverrideEdit": "Last edited",
-    "profile": "Profile & role"
+    "profile": "Profile & role",
+    "rolePermsTitle": "Role permissions",
+    "rolePermsHint": "Configure the default feature permissions for each role available in user management. Set per-user overrides on the User Management page.",
+    "backToUsers": "User management (roles & permissions)",
+    "roleCode": "Code",
+    "defaultPermCount": "Default permissions",
+    "actions": "Actions",
+    "edit": "Edit",
+    "selectRole": "Select role",
+    "selected": "Selected",
+    "adminAlwaysAll": "Admin always has all permissions",
+    "selectAllModule": "Select all",
+    "clear": "Clear",
+    "saving": "Saving…",
+    "adminNotEditable": "Admin permissions are fixed",
+    "saveRolePerms": "Save role permissions"
   },
   "common": {
     "loading": "Loading…",
@@ -123,5 +138,16 @@
       "closed": "Closed",
       "cancelled": "Cancelled"
     }
+  },
+  "roles": {
+    "admin": "Admin",
+    "it": "IT",
+    "purchasing": "Purchasing",
+    "warehouse": "Warehouse",
+    "sales": "Sales",
+    "sales_manager": "Sales Manager",
+    "account": "Account",
+    "finance": "Finance",
+    "driver": "Driver"
   }
 }

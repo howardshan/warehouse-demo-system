@@ -3,8 +3,9 @@
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { updateUserProfile } from "@/app/actions/it";
-import { APP_ROLES, APP_ROLE_LABELS } from "@/lib/auth/roles";
+import { APP_ROLES } from "@/lib/auth/roles";
 import { useToast } from "@/components/ui/toast";
+import { useI18n } from "@/components/i18n/provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,6 +21,7 @@ export function ProfileForm({
 }) {
   const router = useRouter();
   const { notify } = useToast();
+  const { t } = useI18n();
   const [pending, start] = useTransition();
 
   return (
@@ -49,7 +51,7 @@ export function ProfileForm({
         <Select name="role" defaultValue={user.role}>
           {APP_ROLES.map((r) => (
             <option key={r} value={r}>
-              {APP_ROLE_LABELS[r]} ({r})
+              {t("roles." + r)}
             </option>
           ))}
         </Select>

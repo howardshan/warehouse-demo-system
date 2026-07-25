@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSessionAccess, can } from "@/lib/auth/access";
-import { APP_ROLES, APP_ROLE_LABELS, isAppRole } from "@/lib/auth/roles";
+import { APP_ROLES, isAppRole } from "@/lib/auth/roles";
 import { createClient } from "@/lib/supabase/server";
 import { getRequestLocale } from "@/app/actions/i18n";
+import { getDictionary, t } from "@/lib/i18n/dictionaries";
 import {
   permissionLabel,
   moduleLabel,
@@ -25,6 +26,7 @@ export default async function RolePermissionsPage({
   const rawRole = sp.role ?? "";
   const selectedRole = isAppRole(rawRole) ? rawRole : "purchasing";
   const locale = await getRequestLocale();
+  const messages = getDictionary(locale);
 
   const supabase = await createClient();
   const [{ data: permissions }, { data: rolePerms }] = await Promise.all([
@@ -74,11 +76,13 @@ export default async function RolePermissionsPage({
           href="/it/users"
           className="text-sm text-teal-800 hover:underline"
         >
-          ← 用户管理（角色与功能权限）
+          ← {t(messages, "it.backToUsers")}
         </Link>
-        <h1 className="mt-2 text-2xl font-semibold">角色权限</h1>
+        <h1 className="mt-2 text-2xl font-semibold">
+          {t(messages, "it.rolePermsTitle")}
+        </h1>
         <p className="mt-1 text-sm text-stone-500">
-          为用户管理中可选的每个角色配置默认功能权限。用户级覆盖请在「用户管理」页设置。
+          {t(messages, "it.rolePermsHint")}
         </p>
       </div>
 
@@ -86,17 +90,17 @@ export default async function RolePermissionsPage({
         <table className="w-full text-left text-sm">
           <thead className="bg-stone-50 text-stone-500">
             <tr>
-              <th className="px-4 py-3">角色</th>
-              <th className="px-4 py-3">代码</th>
-              <th className="px-4 py-3">默认权限数</th>
-              <th className="px-4 py-3">操作</th>
+              <th className="px-4 py-3">{t(messages, "it.role")}</th>
+              <th className="px-4 py-3">{t(messages, "it.roleCode")}</th>
+              <th className="px-4 py-3">{t(messages, "it.defaultPermCount")}</th>
+              <th className="px-4 py-3">{t(messages, "it.actions")}</th>
             </tr>
           </thead>
           <tbody>
             {APP_ROLES.map((role) => (
               <tr key={role} className="border-t border-stone-100">
                 <td className="px-4 py-3 font-medium">
-                  {APP_ROLE_LABELS[role]}
+                  {t(messages, "roles." + role)}
                 </td>
                 <td className="px-4 py-3 font-mono text-xs">{role}</td>
                 <td className="px-4 py-3 tabular-nums">
@@ -107,7 +111,7 @@ export default async function RolePermissionsPage({
                     href={`/it/role-permissions?role=${role}`}
                     className="text-sm font-medium text-teal-800 hover:underline"
                   >
-                    编辑
+                    {t(messages, "it.edit")}
                   </Link>
                 </td>
               </tr>

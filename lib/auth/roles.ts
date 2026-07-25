@@ -13,17 +13,7 @@ export const APP_ROLES = [
 
 export type AppRole = (typeof APP_ROLES)[number];
 
-export const APP_ROLE_LABELS: Record<AppRole, string> = {
-  admin: "管理员",
-  it: "IT",
-  purchasing: "采购",
-  warehouse: "仓库",
-  sales: "销售",
-  sales_manager: "销售经理",
-  account: "账户",
-  finance: "财务",
-  driver: "司机",
-};
+// 角色的展示名称已本地化，见 messages/*.json 的 `roles` 命名空间（t("roles." + role)）。
 
 export function isAppRole(value: string): value is AppRole {
   return (APP_ROLES as readonly string[]).includes(value);
