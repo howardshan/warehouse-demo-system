@@ -182,9 +182,3 @@ export async function setRolePermissions(
 export async function inviteUserAction(formData: FormData): Promise<void> {
   await inviteUser(formData);
 }
-
-export async function updateUserProfileAction(
-  formData: FormData,
-): Promise<void> {
-  await updateUserProfile(formData);
-}

@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { resetUserPassword } from "@/app/actions/it";
+import { useToast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,9 +15,9 @@ export function ResetPasswordForm({
   userId: string;
   labels: { newPassword: string; reset: string; done: string };
 }) {
+  const { notify } = useToast();
   const [pw, setPw] = useState("");
   const [pending, start] = useTransition();
-  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
   return (
     <div className="flex flex-wrap items-end gap-2">
@@ -27,37 +28,26 @@ export function ResetPasswordForm({
           value={pw}
           minLength={8}
           autoComplete="new-password"
-          onChange={(e) => {
-            setPw(e.target.value);
-            setMsg(null);
-          }}
+          onChange={(e) => setPw(e.target.value)}
         />
       </div>
       <Button
         size="sm"
         disabled={pending || pw.length < 8}
         onClick={() => {
-          setMsg(null);
           start(async () => {
             const res = await resetUserPassword(userId, pw);
             if (res.ok) {
-              setMsg({ ok: true, text: labels.done });
+              notify(labels.done, "success");
               setPw("");
             } else {
-              setMsg({ ok: false, text: res.error });
+              notify(res.error, "error");
             }
           });
         }}
       >
         {pending ? "…" : labels.reset}
       </Button>
-      {msg && (
-        <span
-          className={`text-sm ${msg.ok ? "text-teal-700" : "text-red-700"}`}
-        >
-          {msg.text}
-        </span>
-      )}
     </div>
   );
 }

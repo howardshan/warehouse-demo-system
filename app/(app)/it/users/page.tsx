@@ -4,7 +4,7 @@ import { getSessionAccess, can } from "@/lib/auth/access";
 import { createClient } from "@/lib/supabase/server";
 import { getRequestLocale } from "@/app/actions/i18n";
 import { getDictionary, t } from "@/lib/i18n/dictionaries";
-import { inviteUserAction, updateUserProfileAction } from "@/app/actions/it";
+import { inviteUserAction } from "@/app/actions/it";
 import { APP_ROLES, APP_ROLE_LABELS } from "@/lib/auth/roles";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +14,7 @@ import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PermissionOverrideEditor } from "./permission-override-editor";
 import { ResetPasswordForm } from "./reset-password-form";
+import { ProfileForm } from "./profile-form";
 
 export default async function ItUsersPage({
   searchParams,
@@ -212,45 +213,21 @@ export default async function ItUsersPage({
                   </p>
                 </CardHeader>
                 <CardBody>
-                  <form
-                    action={updateUserProfileAction}
-                    className="grid gap-3 md:grid-cols-4 md:items-end"
-                  >
-                    <input type="hidden" name="user_id" value={selected.id} />
-                    <div className="md:col-span-2">
-                      <Label>Name</Label>
-                      <Input
-                        name="full_name"
-                        defaultValue={selected.full_name ?? ""}
-                      />
-                    </div>
-                    <div>
-                      <Label>{t(messages, "it.role")}</Label>
-                      <Select name="role" defaultValue={selected.role}>
-                        {APP_ROLES.map((r) => (
-                          <option key={r} value={r}>
-                            {APP_ROLE_LABELS[r]} ({r})
-                          </option>
-                        ))}
-                      </Select>
-                    </div>
-                    <div className="flex items-center gap-2 pb-2">
-                      <input
-                        id={`active-${selected.id}`}
-                        type="checkbox"
-                        name="is_active"
-                        defaultChecked={selected.is_active}
-                      />
-                      <Label htmlFor={`active-${selected.id}`} className="mb-0">
-                        {t(messages, "it.active")}
-                      </Label>
-                    </div>
-                    <div className="md:col-span-4">
-                      <Button type="submit" size="sm">
-                        {t(messages, "it.save")}
-                      </Button>
-                    </div>
-                  </form>
+                  <ProfileForm
+                    key={`profile-${selected.id}-${selected.role}-${selected.is_active}-${selected.full_name ?? ""}`}
+                    user={{
+                      id: selected.id,
+                      full_name: selected.full_name,
+                      role: selected.role,
+                      is_active: selected.is_active,
+                    }}
+                    labels={{
+                      role: t(messages, "it.role"),
+                      active: t(messages, "it.active"),
+                      save: t(messages, "it.save"),
+                      saved: t(messages, "it.saved"),
+                    }}
+                  />
                 </CardBody>
               </Card>
 
