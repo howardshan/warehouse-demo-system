@@ -10,14 +10,29 @@ function creditTone(status: string) {
   return "danger" as const;
 }
 
+type CustomerRoute = { code: string; name: string } | null;
+
+// Supabase 对「多对一」嵌套可能返回对象或单元素数组，统一取单对象
+function normRoute(r: unknown): CustomerRoute {
+  const v = Array.isArray(r) ? r[0] : r;
+  return (v ?? null) as CustomerRoute;
+}
+
 export default async function CustomersPage() {
   const supabase = await createClient();
-  const { data: customers } = await supabase
-    .from("customers")
-    .select(
-      "id, code, name, credit_limit, payment_terms_days, credit_status, sales_permit_expiry, delivery_route, is_active",
-    )
-    .order("code");
+  const [{ data: customers }, { data: routes }] = await Promise.all([
+    supabase
+      .from("customers")
+      .select(
+        "id, code, name, credit_limit, payment_terms_days, credit_status, sales_permit_expiry, route_stop_seq, is_active, route:routes(code, name)",
+      )
+      .order("code"),
+    supabase
+      .from("routes")
+      .select("id, code, name")
+      .eq("is_active", true)
+      .order("code"),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -27,7 +42,7 @@ export default async function CustomersPage() {
           信用占用将在后续 Phase 计入「已签收未开票」（铁律 5）。
         </p>
       </div>
-      <CustomerCreateForm />
+      <CustomerCreateForm routes={routes ?? []} />
       <div className="overflow-hidden rounded-lg border border-stone-200 bg-white">
         <table className="w-full text-left text-sm">
           <thead className="bg-stone-50 text-stone-500">
@@ -38,7 +53,7 @@ export default async function CustomersPage() {
               <th className="px-4 py-3 font-medium">账期</th>
               <th className="px-4 py-3 font-medium">信用状态</th>
               <th className="px-4 py-3 font-medium">Permit 到期</th>
-              <th className="px-4 py-3 font-medium">线路</th>
+              <th className="px-4 py-3 font-medium">配送路线</th>
             </tr>
           </thead>
           <tbody>
@@ -67,7 +82,13 @@ export default async function CustomersPage() {
                   </Badge>
                 </td>
                 <td className="px-4 py-3">{c.sales_permit_expiry ?? "—"}</td>
-                <td className="px-4 py-3">{c.delivery_route ?? "—"}</td>
+                <td className="px-4 py-3">
+                  {normRoute(c.route)
+                    ? `${normRoute(c.route)!.name}${
+                        c.route_stop_seq ? ` · #${c.route_stop_seq}` : ""
+                      }`
+                    : "—"}
+                </td>
               </tr>
             ))}
           </tbody>

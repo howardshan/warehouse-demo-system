@@ -77,7 +77,8 @@
     "permissions": "Permisos por usuario",
     "rolePermissions": "Permisos por rol",
     "auditLog": "Bitácora",
-    "settings": "Configuración"
+    "settings": "Configuración",
+    "routes": "Rutas de entrega"
   },
   "it": {
     "usersTitle": "Usuarios y roles",

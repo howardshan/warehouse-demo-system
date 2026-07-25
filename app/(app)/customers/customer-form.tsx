@@ -9,7 +9,11 @@ import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 
-export function CustomerCreateForm() {
+export function CustomerCreateForm({
+  routes,
+}: {
+  routes: { id: string; code: string; name: string }[];
+}) {
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -45,8 +49,9 @@ export function CustomerCreateForm() {
                   String(fd.get("sales_permit_url") || "") || null,
                 sales_permit_expiry:
                   String(fd.get("sales_permit_expiry") || "") || null,
-                delivery_route:
-                  String(fd.get("delivery_route") || "") || null,
+                route_id: String(fd.get("route_id") || "") || null,
+                route_stop_seq:
+                  String(fd.get("route_stop_seq") || "") || null,
                 default_address:
                   String(fd.get("default_address") || "") || null,
                 is_active: true,
@@ -125,10 +130,21 @@ export function CustomerCreateForm() {
             <Input name="sales_permit_expiry" type="date" />
           </div>
           <div>
-            <Label>配送线路</Label>
-            <Input name="delivery_route" />
+            <Label>配送路线</Label>
+            <Select name="route_id" defaultValue="">
+              <option value="">（未分配）</option>
+              {routes.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.code} · {r.name}
+                </option>
+              ))}
+            </Select>
           </div>
           <div>
+            <Label>路线站序（第几站）</Label>
+            <Input name="route_stop_seq" type="number" min="1" placeholder="1" />
+          </div>
+          <div className="md:col-span-2">
             <Label>默认送货地址</Label>
             <Input name="default_address" />
           </div>

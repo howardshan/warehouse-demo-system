@@ -110,6 +110,11 @@ export const PERMISSION_LABELS: Record<string, Record<Locale, L>> = {
     en: { name: "Manage locations & totes", desc: "Maintain storage locations and totes" },
     "es-MX": { name: "Gestionar ubicaciones", desc: "Mantener ubicaciones de almacenamiento y contenedores" },
   },
+  "warehouse.routes.write": {
+    zh: { name: "管理配送路线", desc: "维护路线、配送日与客户站点顺序" },
+    en: { name: "Manage delivery routes", desc: "Maintain routes, delivery days and customer stop order" },
+    "es-MX": { name: "Gestionar rutas de entrega", desc: "Mantener rutas, días de entrega y orden de paradas" },
+  },
   "warehouse.picklists.read": {
     zh: { name: "查看拣货单", desc: "查看拣货单与拣货明细" },
     en: { name: "View pick lists", desc: "See pick lists and pick lines" },

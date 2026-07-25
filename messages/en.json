@@ -77,7 +77,8 @@
     "permissions": "User permission overrides",
     "rolePermissions": "Role permissions",
     "auditLog": "Audit log",
-    "settings": "Settings"
+    "settings": "Settings",
+    "routes": "Delivery routes"
   },
   "it": {
     "usersTitle": "Users & roles",
