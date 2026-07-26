@@ -296,15 +296,6 @@ export default async function ItUsersPage({
                     permissions={permissions}
                     roleDefaultKeys={roleDefaultKeys}
                     overrides={overrideMap}
-                    labels={{
-                      module: t(messages, "it.module"),
-                      permission: t(messages, "it.permission"),
-                      granted: t(messages, "it.granted"),
-                      denied: t(messages, "it.denied"),
-                      default: t(messages, "it.default"),
-                      save: t(messages, "it.save"),
-                      saved: t(messages, "it.saved"),
-                    }}
                   />
                 </div>
               )}

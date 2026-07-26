@@ -116,7 +116,9 @@
     "clear": "清空",
     "saving": "保存中…",
     "adminNotEditable": "管理员权限不可改",
-    "saveRolePerms": "保存角色权限"
+    "saveRolePerms": "保存角色权限",
+    "override": "覆盖",
+    "overrideHint": "勾选=该用户可用此功能。与角色默认不同的项将作为「覆盖」保存。"
   },
   "common": {
     "loading": "加载中…",

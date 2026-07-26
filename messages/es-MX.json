@@ -116,7 +116,9 @@
     "clear": "Limpiar",
     "saving": "Guardando…",
     "adminNotEditable": "Los permisos de admin son fijos",
-    "saveRolePerms": "Guardar permisos de rol"
+    "saveRolePerms": "Guardar permisos de rol",
+    "override": "Anulación",
+    "overrideHint": "Marcado = el usuario puede usar esta función. Los que difieren del rol se guardan como anulaciones."
   },
   "common": {
     "loading": "Cargando…",
