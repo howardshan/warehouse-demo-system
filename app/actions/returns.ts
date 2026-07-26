@@ -211,10 +211,23 @@ export async function createTrip(formData: FormData): Promise<void> {
   const { supabase } = await requireUser();
   const driverId = text(formData, "driver_id");
   if (!driverId) throw new Error("必须选择司机");
+  const routeId = text(formData, "route_id") || null;
+  let vehicle = text(formData, "vehicle") || null;
+  // 车辆默认取路线的 default_vehicle
+  if (routeId && !vehicle) {
+    const { data: r } = await supabase
+      .from("routes")
+      .select("default_vehicle")
+      .eq("id", routeId)
+      .maybeSingle();
+    vehicle = r?.default_vehicle ?? null;
+  }
   const { error } = await supabase.from("delivery_trips").insert({
     trip_number: text(formData, "trip_number") || `TRIP-${Date.now().toString(36).toUpperCase()}`,
     trip_date: text(formData, "trip_date") || new Date().toISOString().slice(0, 10),
     driver_id: driverId,
+    route_id: routeId,
+    vehicle,
   });
   if (error) throw new Error(error.message);
   refreshReturns();
@@ -228,4 +241,61 @@ export async function assignReturnToTrip(returnNoteId: string, formData: FormDat
     .update({ delivery_trip_id: tripId }).eq("id", returnNoteId);
   if (error) throw new Error(error.message);
   refreshReturns();
+}
+
+/** 把单个发运单挂到趟次（手动）。 */
+export async function assignShippingToTrip(
+  shippingListId: string,
+  formData: FormData,
+): Promise<void> {
+  const { supabase } = await requireUser();
+  const tripId = text(formData, "delivery_trip_id");
+  if (!tripId) throw new Error("必须选择配送趟次");
+  const { error } = await supabase
+    .from("shipping_lists")
+    .update({ delivery_trip_id: tripId })
+    .eq("id", shippingListId);
+  if (error) throw new Error(error.message);
+  refreshReturns();
+  revalidatePath("/warehouse/shipping");
+}
+
+/** 从趟次移除发运单。 */
+export async function unassignShippingFromTrip(
+  shippingListId: string,
+): Promise<void> {
+  const { supabase } = await requireUser();
+  const { error } = await supabase
+    .from("shipping_lists")
+    .update({ delivery_trip_id: null })
+    .eq("id", shippingListId);
+  if (error) throw new Error(error.message);
+  refreshReturns();
+  revalidatePath("/warehouse/shipping");
+}
+
+/** 一键把「本趟次路线的客户 + 已放行 + 未挂趟次」的发运单挂到该趟次。 */
+export async function autoAssignRouteShipments(tripId: string): Promise<void> {
+  const { supabase } = await requireUser();
+  const { data: trip } = await supabase
+    .from("delivery_trips")
+    .select("route_id")
+    .eq("id", tripId)
+    .maybeSingle();
+  if (!trip?.route_id) throw new Error("趟次未关联路线，无法一键挂载");
+  const { data: custs } = await supabase
+    .from("customers")
+    .select("id")
+    .eq("route_id", trip.route_id);
+  const custIds = (custs ?? []).map((c) => c.id);
+  if (!custIds.length) return;
+  const { error } = await supabase
+    .from("shipping_lists")
+    .update({ delivery_trip_id: tripId })
+    .is("delivery_trip_id", null)
+    .in("status", ["ready", "released", "in_transit"])
+    .in("customer_id", custIds);
+  if (error) throw new Error(error.message);
+  refreshReturns();
+  revalidatePath("/warehouse/shipping");
 }

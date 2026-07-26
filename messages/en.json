@@ -116,7 +116,9 @@
     "clear": "Clear",
     "saving": "Saving…",
     "adminNotEditable": "Admin permissions are fixed",
-    "saveRolePerms": "Save role permissions"
+    "saveRolePerms": "Save role permissions",
+    "override": "Override",
+    "overrideHint": "Checked = user can use this feature. Items differing from role default are saved as overrides."
   },
   "common": {
     "loading": "Loading…",
