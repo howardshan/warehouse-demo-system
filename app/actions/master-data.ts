@@ -9,6 +9,7 @@ import {
   productCategorySchema,
   productFamilySchema,
   productSchema,
+  routeSchema,
   supplierSchema,
   toteSchema,
 } from "@/lib/domain/schemas";
@@ -294,6 +295,35 @@ export async function updateTote(id: string, raw: unknown) {
   const { error } = await supabase.from("totes").update(parsed).eq("id", id);
   if (error) return { ok: false as const, error: error.message };
   revalidatePath("/master-data/totes");
+  return { ok: true as const };
+}
+
+export async function createRoute(raw: unknown) {
+  const parsed = routeSchema.parse(raw);
+  const { supabase } = await requireUser();
+  const { error } = await supabase.from("routes").insert({
+    ...parsed,
+    default_vehicle: parsed.default_vehicle || null,
+    cutoff_time: parsed.cutoff_time || null,
+  });
+  if (error) return { ok: false as const, error: error.message };
+  revalidatePath("/master-data/routes");
+  return { ok: true as const };
+}
+
+export async function updateRoute(id: string, raw: unknown) {
+  const parsed = routeSchema.parse(raw);
+  const { supabase } = await requireUser();
+  const { error } = await supabase
+    .from("routes")
+    .update({
+      ...parsed,
+      default_vehicle: parsed.default_vehicle || null,
+      cutoff_time: parsed.cutoff_time || null,
+    })
+    .eq("id", id);
+  if (error) return { ok: false as const, error: error.message };
+  revalidatePath("/master-data/routes");
   return { ok: true as const };
 }
 

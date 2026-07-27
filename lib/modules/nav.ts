@@ -270,6 +270,7 @@ export const NAV_MODULES: NavModule[] = [
       "warehouse.weighing.write",
       "warehouse.shipping.write",
       "warehouse.returns.write",
+      "warehouse.routes.write",
     ],
     items: [
       {
@@ -296,6 +297,11 @@ export const NAV_MODULES: NavModule[] = [
         href: "/warehouse/shipping",
         labelKey: "nav.shipping",
         permission: "warehouse.shipping.write",
+      },
+      {
+        href: "/master-data/routes",
+        labelKey: "nav.routes",
+        permission: "warehouse.routes.write",
       },
       { href: "/delivery/trips", labelKey: "nav.trips", permission: "warehouse.shipping.write" },
       { href: "/delivery/pod", labelKey: "nav.pod", permission: "warehouse.shipping.write" },
@@ -400,11 +406,6 @@ export const NAV_MODULES: NavModule[] = [
     items: [
       { href: "/it/users", labelKey: "nav.users", permission: "it.users.manage" },
       {
-        href: "/it/permissions",
-        labelKey: "nav.permissions",
-        permission: "it.permissions.manage",
-      },
-      {
         href: "/it/role-permissions",
         labelKey: "nav.rolePermissions",
         permission: "it.permissions.manage",
@@ -422,24 +423,3 @@ export const NAV_MODULES: NavModule[] = [
     ],
   },
 ];
-
-/** 路径 → 所需权限（用于 layout 守卫；满足任一即可） */
-export function requiredPermissionsForPath(pathname: string): string[] | null {
-  if (pathname === "/dashboard" || pathname.startsWith("/dashboard")) {
-    return ["dashboard.view"];
-  }
-  let best: { href: string; permission: string } | null = null;
-  for (const mod of NAV_MODULES) {
-    for (const item of mod.items) {
-      const candidates = item.children?.length ? [...item.children, item] : [item];
-      for (const cand of candidates) {
-        if (pathname === cand.href || pathname.startsWith(cand.href + "/")) {
-          if (!best || cand.href.length > best.href.length) {
-            best = { href: cand.href, permission: cand.permission };
-          }
-        }
-      }
-    }
-  }
-  return best ? [best.permission] : null;
-}

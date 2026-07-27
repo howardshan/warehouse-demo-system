@@ -79,12 +79,16 @@
     "rolePermissions": "角色权限",
     "auditLog": "操作日志",
     "settings": "系统设置",
+<<<<<<< HEAD
     "payments": "付款记录",
     "allOrders": "所有订单"
+=======
+    "routes": "配送路线"
+>>>>>>> 81fe284f9fcafb093982c6de6b8a33316a2e38cc
   },
   "it": {
     "usersTitle": "用户与角色",
-    "usersHint": "IT / Admin 可调整角色与启用状态。功能权限可在「功能权限」页按用户覆盖。",
+    "usersHint": "IT / Admin 可在此选择用户，直接编辑其角色、启用状态与单独的功能权限（覆盖角色默认）。角色默认权限请到「角色权限」页编辑。",
     "permissionsTitle": "用户权限覆盖",
     "permissionsHint": "先选用户，再勾选其可用功能。显式关闭会覆盖角色默认权限。角色默认权限请到「角色权限」页编辑。",
     "role": "角色",
@@ -96,7 +100,31 @@
     "granted": "授予",
     "denied": "收回",
     "default": "角色默认",
-    "noAccess": "无权限访问此模块"
+    "noAccess": "无权限访问此模块",
+    "saved": "已保存",
+    "permOverrideTitle": "功能权限覆盖",
+    "resetPassword": "重置密码",
+    "newPassword": "新密码",
+    "resetPasswordDone": "密码已重置",
+    "lastOverrideEdit": "上次修改",
+    "profile": "资料与角色",
+    "rolePermsTitle": "角色权限",
+    "rolePermsHint": "为用户管理中可选的每个角色配置默认功能权限。用户级覆盖请在「用户管理」页设置。",
+    "backToUsers": "用户管理（角色与功能权限）",
+    "roleCode": "代码",
+    "defaultPermCount": "默认权限数",
+    "actions": "操作",
+    "edit": "编辑",
+    "selectRole": "选择角色",
+    "selected": "已选",
+    "adminAlwaysAll": "管理员始终拥有全部权限",
+    "selectAllModule": "全选本模块",
+    "clear": "清空",
+    "saving": "保存中…",
+    "adminNotEditable": "管理员权限不可改",
+    "saveRolePerms": "保存角色权限",
+    "override": "覆盖",
+    "overrideHint": "勾选=该用户可用此功能。与角色默认不同的项将作为「覆盖」保存。"
   },
   "common": {
     "loading": "加载中…",
@@ -120,6 +148,7 @@
       "cancelled": "已取消"
     }
   },
+<<<<<<< HEAD
   "pg": {
     "inventory": {
       "stockTitle": "查看库存",
@@ -1048,5 +1077,17 @@
       "back": "所有订单",
       "status": "状态"
     }
+=======
+  "roles": {
+    "admin": "管理员",
+    "it": "IT",
+    "purchasing": "采购",
+    "warehouse": "仓库",
+    "sales": "销售",
+    "sales_manager": "销售经理",
+    "account": "账户",
+    "finance": "财务",
+    "driver": "司机"
+>>>>>>> 81fe284f9fcafb093982c6de6b8a33316a2e38cc
   }
 }

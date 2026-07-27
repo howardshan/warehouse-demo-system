@@ -79,12 +79,16 @@
     "rolePermissions": "Role permissions",
     "auditLog": "Audit log",
     "settings": "Settings",
+<<<<<<< HEAD
     "payments": "Payments",
     "allOrders": "All orders"
+=======
+    "routes": "Delivery routes"
+>>>>>>> 81fe284f9fcafb093982c6de6b8a33316a2e38cc
   },
   "it": {
     "usersTitle": "Users & roles",
-    "usersHint": "IT / Admin can change roles and active status. Per-user feature overrides are on the Permissions page.",
+    "usersHint": "IT / Admin can select a user here to edit their role, active status, and individual feature permissions (overriding role defaults). Edit role defaults on the Role Permissions page.",
     "permissionsTitle": "Feature permissions",
     "permissionsHint": "Select a user, then toggle features. Explicit deny overrides role defaults.",
     "role": "Role",
@@ -96,7 +100,31 @@
     "granted": "Grant",
     "denied": "Deny",
     "default": "Role default",
-    "noAccess": "You do not have access to this module"
+    "noAccess": "You do not have access to this module",
+    "saved": "Saved",
+    "permOverrideTitle": "Feature permission overrides",
+    "resetPassword": "Reset password",
+    "newPassword": "New password",
+    "resetPasswordDone": "Password reset",
+    "lastOverrideEdit": "Last edited",
+    "profile": "Profile & role",
+    "rolePermsTitle": "Role permissions",
+    "rolePermsHint": "Configure the default feature permissions for each role available in user management. Set per-user overrides on the User Management page.",
+    "backToUsers": "User management (roles & permissions)",
+    "roleCode": "Code",
+    "defaultPermCount": "Default permissions",
+    "actions": "Actions",
+    "edit": "Edit",
+    "selectRole": "Select role",
+    "selected": "Selected",
+    "adminAlwaysAll": "Admin always has all permissions",
+    "selectAllModule": "Select all",
+    "clear": "Clear",
+    "saving": "Saving…",
+    "adminNotEditable": "Admin permissions are fixed",
+    "saveRolePerms": "Save role permissions",
+    "override": "Override",
+    "overrideHint": "Checked = user can use this feature. Items differing from role default are saved as overrides."
   },
   "common": {
     "loading": "Loading…",
@@ -120,6 +148,7 @@
       "cancelled": "Cancelled"
     }
   },
+<<<<<<< HEAD
   "pg": {
     "inventory": {
       "stockTitle": "Stock",
@@ -1048,5 +1077,17 @@
       "back": "All orders",
       "status": "Status"
     }
+=======
+  "roles": {
+    "admin": "Admin",
+    "it": "IT",
+    "purchasing": "Purchasing",
+    "warehouse": "Warehouse",
+    "sales": "Sales",
+    "sales_manager": "Sales Manager",
+    "account": "Account",
+    "finance": "Finance",
+    "driver": "Driver"
+>>>>>>> 81fe284f9fcafb093982c6de6b8a33316a2e38cc
   }
 }

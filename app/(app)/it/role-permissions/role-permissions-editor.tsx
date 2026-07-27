@@ -3,13 +3,23 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { setRolePermissions } from "@/app/actions/it";
+<<<<<<< HEAD
 import { APP_ROLE_LABELS, type AppRole } from "@/lib/auth/roles";
+=======
+import { type AppRole } from "@/lib/auth/roles";
+>>>>>>> 81fe284f9fcafb093982c6de6b8a33316a2e38cc
 import { useI18n } from "@/components/i18n/provider";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 
-type Perm = { key: string; module: string; description: string };
+type Perm = {
+  key: string;
+  module: string;
+  moduleLabel: string;
+  name: string;
+  desc: string;
+};
 
 export function RolePermissionsEditor({
   roles,
@@ -52,7 +62,11 @@ export function RolePermissionsEditor({
       <div className="flex flex-wrap items-end gap-4">
         <div className="max-w-xs">
           <label className="mb-1 block text-sm font-medium text-stone-700">
+<<<<<<< HEAD
             {t("pg.it.selectRole")}
+=======
+            {t("it.selectRole")}
+>>>>>>> 81fe284f9fcafb093982c6de6b8a33316a2e38cc
           </label>
           <Select
             value={selectedRole}
@@ -62,24 +76,29 @@ export function RolePermissionsEditor({
           >
             {roles.map((r) => (
               <option key={r} value={r}>
-                {APP_ROLE_LABELS[r]} ({r})
+                {t("roles." + r)}
               </option>
             ))}
           </Select>
         </div>
         <p className="pb-2 text-sm text-stone-500">
+<<<<<<< HEAD
           {t("pg.it.selectedCount")
             .replace("{n}", String(selectedCount))
             .replace("{total}", String(permissions.length))}
           {isAdmin && t("pg.it.adminAlwaysAll")}
+=======
+          {t("it.selected")} {selectedCount} / {permissions.length}
+          {isAdmin && ` · ${t("it.adminAlwaysAll")}`}
+>>>>>>> 81fe284f9fcafb093982c6de6b8a33316a2e38cc
         </p>
       </div>
 
       {byModule.map(([module, perms]) => (
         <Card key={module}>
           <CardHeader className="flex flex-row items-center justify-between gap-3">
-            <h2 className="font-semibold uppercase tracking-wide text-teal-900">
-              {module}
+            <h2 className="font-semibold tracking-wide text-teal-900">
+              {perms[0]?.moduleLabel ?? module}
             </h2>
             {!isAdmin && (
               <div className="flex gap-2 text-xs">
@@ -94,7 +113,11 @@ export function RolePermissionsEditor({
                     })
                   }
                 >
+<<<<<<< HEAD
                   {t("pg.it.selectAllModule")}
+=======
+                  {t("it.selectAllModule")}
+>>>>>>> 81fe284f9fcafb093982c6de6b8a33316a2e38cc
                 </button>
                 <button
                   type="button"
@@ -107,7 +130,11 @@ export function RolePermissionsEditor({
                     })
                   }
                 >
+<<<<<<< HEAD
                   {t("pg.it.clear")}
+=======
+                  {t("it.clear")}
+>>>>>>> 81fe284f9fcafb093982c6de6b8a33316a2e38cc
                 </button>
               </div>
             )}
@@ -131,11 +158,16 @@ export function RolePermissionsEditor({
                   }
                 />
                 <span>
-                  <span className="font-mono text-xs text-teal-900">
-                    {p.key}
+                  <span className="block text-sm font-medium text-stone-800">
+                    {p.name}
                   </span>
-                  <span className="mt-0.5 block text-sm text-stone-600">
-                    {p.description}
+                  {p.desc && (
+                    <span className="mt-0.5 block text-xs text-stone-500">
+                      {p.desc}
+                    </span>
+                  )}
+                  <span className="mt-0.5 block font-mono text-[11px] text-stone-400">
+                    {p.key}
                   </span>
                 </span>
               </label>
@@ -161,10 +193,17 @@ export function RolePermissionsEditor({
         }}
       >
         {pending
+<<<<<<< HEAD
           ? t("pg.it.saving")
           : isAdmin
             ? t("pg.it.adminNotEditable")
             : t("pg.it.saveRolePermissions")}
+=======
+          ? t("it.saving")
+          : isAdmin
+            ? t("it.adminNotEditable")
+            : t("it.saveRolePerms")}
+>>>>>>> 81fe284f9fcafb093982c6de6b8a33316a2e38cc
       </Button>
     </div>
   );

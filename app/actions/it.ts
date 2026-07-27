@@ -45,7 +45,6 @@ export async function updateUserProfile(formData: FormData) {
 
   if (error) return { ok: false as const, error: error.message };
   revalidatePath("/it/users");
-  revalidatePath("/it/permissions");
   void access;
   return { ok: true as const };
 }
@@ -86,6 +85,24 @@ export async function inviteUser(formData: FormData) {
   return { ok: true as const };
 }
 
+/** 管理员重置某用户密码（service client 绕过 RLS；需 it.users.manage） */
+export async function resetUserPassword(userId: string, password: string) {
+  await requireItUsers();
+  if (!userId) {
+    return { ok: false as const, error: "缺少用户" };
+  }
+  if (password.length < 8) {
+    return { ok: false as const, error: "密码至少 8 位" };
+  }
+
+  const service = createServiceClient();
+  const { error } = await service.auth.admin.updateUserById(userId, {
+    password,
+  });
+  if (error) return { ok: false as const, error: error.message };
+  return { ok: true as const };
+}
+
 export async function setUserPermissionOverrides(
   userId: string,
   entries: { key: string; state: "default" | "grant" | "deny" }[],
@@ -112,7 +129,7 @@ export async function setUserPermissionOverrides(
     if (error) return { ok: false as const, error: error.message };
   }
 
-  revalidatePath("/it/permissions");
+  revalidatePath("/it/users");
   return { ok: true as const };
 }
 
@@ -158,16 +175,10 @@ export async function setRolePermissions(
   }
 
   revalidatePath("/it/role-permissions");
-  revalidatePath("/it/permissions");
+  revalidatePath("/it/users");
   return { ok: true as const, count: finalKeys.length };
 }
 
 export async function inviteUserAction(formData: FormData): Promise<void> {
   await inviteUser(formData);
-}
-
-export async function updateUserProfileAction(
-  formData: FormData,
-): Promise<void> {
-  await updateUserProfile(formData);
 }

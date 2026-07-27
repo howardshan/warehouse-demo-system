@@ -183,7 +183,7 @@ export default async function AuditLogPage({
                     : t(messages, "pg.it.system")}
                 </td>
                 <td className="px-4 py-3 font-mono text-[10px] text-stone-500">
-                  {row.record_id.slice(0, 8)}…
+                  {row.record_id ? `${row.record_id.slice(0, 8)}…` : "—"}
                 </td>
                 <td className="max-w-md px-4 py-3 text-xs break-all text-stone-600">
                   {summarizeDiff(

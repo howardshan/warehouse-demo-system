@@ -11,16 +11,31 @@ function creditTone(status: string) {
   return "danger" as const;
 }
 
+type CustomerRoute = { code: string; name: string } | null;
+
+// Supabase 对「多对一」嵌套可能返回对象或单元素数组，统一取单对象
+function normRoute(r: unknown): CustomerRoute {
+  const v = Array.isArray(r) ? r[0] : r;
+  return (v ?? null) as CustomerRoute;
+}
+
 export default async function CustomersPage() {
   const locale = await getRequestLocale();
   const messages = getDictionary(locale);
   const supabase = await createClient();
-  const { data: customers } = await supabase
-    .from("customers")
-    .select(
-      "id, code, name, credit_limit, payment_terms_days, credit_status, sales_permit_expiry, delivery_route, is_active",
-    )
-    .order("code");
+  const [{ data: customers }, { data: routes }] = await Promise.all([
+    supabase
+      .from("customers")
+      .select(
+        "id, code, name, credit_limit, payment_terms_days, credit_status, sales_permit_expiry, route_stop_seq, is_active, route:routes(code, name)",
+      )
+      .order("code"),
+    supabase
+      .from("routes")
+      .select("id, code, name")
+      .eq("is_active", true)
+      .order("code"),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -30,10 +45,15 @@ export default async function CustomersPage() {
           {t(messages, "pg.customers.customersHint")}
         </p>
       </div>
+<<<<<<< HEAD
+=======
+      <CustomerCreateForm routes={routes ?? []} />
+>>>>>>> 81fe284f9fcafb093982c6de6b8a33316a2e38cc
       <div className="overflow-hidden rounded-lg border border-stone-200 bg-white">
         <table className="w-full text-left text-sm">
           <thead className="bg-stone-50 text-stone-500">
             <tr>
+<<<<<<< HEAD
               <th className="px-4 py-3 font-medium">{t(messages, "pg.customers.code")}</th>
               <th className="px-4 py-3 font-medium">{t(messages, "pg.customers.name")}</th>
               <th className="px-4 py-3 font-medium">{t(messages, "pg.customers.creditLimit")}</th>
@@ -41,6 +61,15 @@ export default async function CustomersPage() {
               <th className="px-4 py-3 font-medium">{t(messages, "pg.customers.creditStatus")}</th>
               <th className="px-4 py-3 font-medium">{t(messages, "pg.customers.permitExpiry")}</th>
               <th className="px-4 py-3 font-medium">{t(messages, "pg.customers.route")}</th>
+=======
+              <th className="px-4 py-3 font-medium">编码</th>
+              <th className="px-4 py-3 font-medium">名称</th>
+              <th className="px-4 py-3 font-medium">额度</th>
+              <th className="px-4 py-3 font-medium">账期</th>
+              <th className="px-4 py-3 font-medium">信用状态</th>
+              <th className="px-4 py-3 font-medium">Permit 到期</th>
+              <th className="px-4 py-3 font-medium">配送路线</th>
+>>>>>>> 81fe284f9fcafb093982c6de6b8a33316a2e38cc
             </tr>
           </thead>
           <tbody>
@@ -69,7 +98,13 @@ export default async function CustomersPage() {
                   </Badge>
                 </td>
                 <td className="px-4 py-3">{c.sales_permit_expiry ?? "—"}</td>
-                <td className="px-4 py-3">{c.delivery_route ?? "—"}</td>
+                <td className="px-4 py-3">
+                  {normRoute(c.route)
+                    ? `${normRoute(c.route)!.name}${
+                        c.route_stop_seq ? ` · #${c.route_stop_seq}` : ""
+                      }`
+                    : "—"}
+                </td>
               </tr>
             ))}
           </tbody>

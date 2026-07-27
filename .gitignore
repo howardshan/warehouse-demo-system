@@ -33,6 +33,7 @@ yarn-error.log*
 .env.local
 .env.*.local
 .env*
+!.env.example
 
 # MCP secrets
 .cursor/mcp.json

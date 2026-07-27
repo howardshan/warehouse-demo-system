@@ -15,6 +15,7 @@
 
 ## 数据库交付
 - [x] 迁移 `0001`–`0017` 全部存在并按依赖顺序覆盖 Phases 1–9。
+- [x] 增量迁移 `0018`–`0032`（IT 权限、原产品多包装、盲收强化、库存调整、称重收货、商品分类）已并入序列，明细见 [migrations.md](./migrations.md)。
 - [x] 关键铁律由约束、触发器、函数、RLS 和 security-invoker 视图共同守护。
 - [x] 六个业务视图：ATP、最高在库成本、待开票、信用占用、贷项队列、批次追溯。
 
@@ -26,8 +27,8 @@
 
 ## 部署前人工验证
 1. 配置真实 Supabase 环境变量并连接目标项目。
-2. 执行全部迁移与种子数据，确认 `0001`–`0017` 无跳号、无失败。
-3. 为测试用户配置 admin、purchasing、warehouse、sales、sales_manager、finance、driver 角色。
+2. 执行全部迁移与种子数据，确认 `0001`–`0032` 无跳号、无失败。
+3. 为测试用户配置 admin、it、purchasing、warehouse、sales、sales_manager、account、finance、driver 角色。
 4. 按角色验证盲收、锁单、两步称重、发运信用②、签收锁行、退货司机字段限制和重包追溯。
 5. 对照外部财务系统确认信用 exposure 与待开票/贷项口径。
 

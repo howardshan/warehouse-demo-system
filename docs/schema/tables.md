@@ -1,6 +1,6 @@
-# 表清单（Phases 1–9）
+# 表清单（Phases 1–9 + 增量）
 
-> 字段与约束以 `supabase/migrations/0001`–`0017` 为准；此处不复制 DDL。
+> 字段与约束以 `supabase/migrations/0001`–`0032` 为准；此处不复制 DDL。
 
 | 表 | Migration | 为什么存在 |
 |---|---|---|
@@ -40,5 +40,11 @@
 | `repack_orders` | `0016_repack_traceability.sql` | 保存重包来源批次与双单位投入 |
 | `repack_outputs` | `0016_repack_traceability.sql` | 保存重包产出及新批次映射 |
 | `doc_counters` | `0017_phase_rls_extras.sql` | 并发安全地产生按日业务单号 |
+| `permissions` | `0019_modules_permissions_it.sql` | 功能权限点主数据，按模块组织 |
+| `role_permissions` | `0019_modules_permissions_it.sql` | 角色默认权限（`0025` 补齐全部角色） |
+| `user_permissions` | `0019_modules_permissions_it.sql` | 用户级权限覆盖（在角色默认之上增/减） |
+| `product_families` | `0020_product_families_pack_variants.sql` | 原产品：多包装 SKU 的同源母体，采购单位与追溯锚点 |
+| `inventory_adjustments` | `0024_inventory_adj_and_audit_coverage.sql` | 库存调整（ADJ）留痕，差异必有原因 |
+| `product_categories` | `0032_product_categories.sql` | 商品分类主数据，挂到 product_families |
 
 `0001_enums.sql` 只创建枚举，`0008_rls.sql` 只补策略，均不新增业务表。
