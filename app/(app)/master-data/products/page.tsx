@@ -3,8 +3,12 @@ import { createClient } from "@/lib/supabase/server";
 import { ProductCreateForm } from "./product-form";
 import { Badge } from "@/components/ui/badge";
 import { formatMoney } from "@/lib/utils";
+import { getRequestLocale } from "@/app/actions/i18n";
+import { getDictionary, t } from "@/lib/i18n/dictionaries";
 
 export default async function ProductsPage() {
+  const locale = await getRequestLocale();
+  const messages = getDictionary(locale);
   const supabase = await createClient();
   const [{ data: products }, { data: locations }, { data: families }] =
     await Promise.all([
@@ -42,21 +46,23 @@ export default async function ProductsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold">商品主数据</h1>
+        <h1 className="text-2xl font-semibold">
+          {t(messages, "pg.masterData.products.title")}
+        </h1>
         <p className="mt-1 text-sm text-stone-500">
-          原产品可对应多个包装 SKU（箱/包/lb）。售价改主档只影响新单；历史成交价快照在订单行。下架商品不可再开新单。{" "}
+          {t(messages, "pg.masterData.products.intro")}{" "}
           <Link
             href="/purchasing/families/new"
             className="font-medium text-teal-800 hover:underline"
           >
-            新建原产品 →
+            {t(messages, "pg.masterData.products.newFamilyLink")}
           </Link>{" "}
           ·{" "}
           <Link
             href="/purchasing/families"
             className="font-medium text-teal-800 hover:underline"
           >
-            原产品查询 →
+            {t(messages, "pg.masterData.products.familyQueryLink")}
           </Link>
         </p>
       </div>
@@ -71,15 +77,33 @@ export default async function ProductsPage() {
           <thead className="bg-stone-50 text-stone-500">
             <tr>
               <th className="px-4 py-3 font-medium">SKU</th>
-              <th className="px-4 py-3 font-medium">原产品</th>
-              <th className="px-4 py-3 font-medium">销售产品名称</th>
-              <th className="px-4 py-3 font-medium">订货单位</th>
-              <th className="px-4 py-3 font-medium">用途</th>
-              <th className="px-4 py-3 font-medium">转换</th>
-              <th className="px-4 py-3 font-medium">单价</th>
-              <th className="px-4 py-3 font-medium">拣货位</th>
-              <th className="px-4 py-3 font-medium">状态</th>
-              <th className="px-4 py-3 font-medium">操作</th>
+              <th className="px-4 py-3 font-medium">
+                {t(messages, "pg.masterData.products.familyHeader")}
+              </th>
+              <th className="px-4 py-3 font-medium">
+                {t(messages, "pg.masterData.products.saleNameHeader")}
+              </th>
+              <th className="px-4 py-3 font-medium">
+                {t(messages, "pg.masterData.products.orderUomHeader")}
+              </th>
+              <th className="px-4 py-3 font-medium">
+                {t(messages, "pg.masterData.products.usageHeader")}
+              </th>
+              <th className="px-4 py-3 font-medium">
+                {t(messages, "pg.masterData.products.conversionHeader")}
+              </th>
+              <th className="px-4 py-3 font-medium">
+                {t(messages, "pg.masterData.products.priceHeader")}
+              </th>
+              <th className="px-4 py-3 font-medium">
+                {t(messages, "pg.masterData.products.pickLocationHeader")}
+              </th>
+              <th className="px-4 py-3 font-medium">
+                {t(messages, "pg.masterData.common.status")}
+              </th>
+              <th className="px-4 py-3 font-medium">
+                {t(messages, "pg.masterData.products.actionsHeader")}
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -117,7 +141,7 @@ export default async function ProductsPage() {
                     )}
                     {p.requires_debox && (
                       <Badge className="ml-2" tone="neutral">
-                        去盒
+                        {t(messages, "pg.masterData.products.deboxBadge")}
                       </Badge>
                     )}
                   </td>
@@ -129,16 +153,17 @@ export default async function ProductsPage() {
                   </td>
                   <td className="px-4 py-3 text-xs">
                     {p.is_purchasable
-                      ? "采购"
+                      ? t(messages, "pg.masterData.products.usagePurchase")
                       : p.is_sellable
-                        ? "销售"
+                        ? t(messages, "pg.masterData.products.usageSell")
                         : "—"}
                   </td>
                   <td className="px-4 py-3 tabular-nums text-xs">
                     {p.family_id && Number(p.pack_contains_qty) > 0
                       ? `1 ${
                           (family as { purchase_uom?: string | null } | null)
-                            ?.purchase_uom ?? "采购单位"
+                            ?.purchase_uom ??
+                          t(messages, "pg.masterData.common.purchaseUomFallback")
                         } = ${p.pack_contains_qty} ${p.ordering_uom}`
                       : "—"}
                   </td>
@@ -152,7 +177,9 @@ export default async function ProductsPage() {
                   </td>
                   <td className="px-4 py-3">
                     <Badge tone={p.is_active ? "ok" : "neutral"}>
-                      {p.is_active ? "上架" : "下架"}
+                      {p.is_active
+                        ? t(messages, "pg.masterData.common.onShelf")
+                        : t(messages, "pg.masterData.common.offShelf")}
                     </Badge>
                   </td>
                   <td className="px-4 py-3">
@@ -160,7 +187,7 @@ export default async function ProductsPage() {
                       href={`/master-data/products/${p.id}`}
                       className="text-sm font-medium text-teal-800 hover:underline"
                     >
-                      编辑
+                      {t(messages, "pg.masterData.products.edit")}
                     </Link>
                   </td>
                 </tr>
@@ -172,7 +199,7 @@ export default async function ProductsPage() {
                   colSpan={9}
                   className="px-4 py-8 text-center text-stone-400"
                 >
-                  暂无商品
+                  {t(messages, "pg.masterData.products.empty")}
                 </td>
               </tr>
             )}

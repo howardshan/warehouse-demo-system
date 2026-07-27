@@ -324,6 +324,7 @@ export const NAV_MODULES: NavModule[] = [
     ],
     items: [
       { href: "/sales/orders", labelKey: "nav.orders", permission: "sales.orders.read" },
+      { href: "/sales/all-orders", labelKey: "nav.allOrders", permission: "sales.orders.read" },
       {
         href: "/sales/approvals",
         labelKey: "nav.approvals",
@@ -353,6 +354,11 @@ export const NAV_MODULES: NavModule[] = [
         permission: "account.customers.read",
       },
       {
+        href: "/customers/new",
+        labelKey: "nav.newCustomer",
+        permission: "account.customers.write",
+      },
+      {
         href: "/finance/credit-control",
         labelKey: "nav.creditControl",
         permission: "account.credit.read",
@@ -365,6 +371,11 @@ export const NAV_MODULES: NavModule[] = [
     descKey: "modules.financeDesc",
     anyOf: ["finance.billing.read", "finance.credit_control.write"],
     items: [
+      {
+        href: "/finance/payments",
+        labelKey: "nav.payments",
+        permission: "finance.billing.read",
+      },
       {
         href: "/finance/billing-queue",
         labelKey: "nav.billingQueue",

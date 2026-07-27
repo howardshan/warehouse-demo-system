@@ -6,15 +6,19 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
+import { useI18n } from "@/components/i18n/provider";
 
 export function SupplierCreateForm() {
+  const { t } = useI18n();
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
   return (
     <Card>
       <CardHeader>
-        <h2 className="text-lg font-semibold">新建供应商</h2>
+        <h2 className="text-lg font-semibold">
+          {t("pg.masterData.suppliers.form.newTitle")}
+        </h2>
       </CardHeader>
       <CardBody>
         <form
@@ -36,15 +40,15 @@ export function SupplierCreateForm() {
           }}
         >
           <div>
-            <Label>名称</Label>
+            <Label>{t("pg.masterData.common.name")}</Label>
             <Input name="name" required />
           </div>
           <div>
-            <Label>联系人</Label>
+            <Label>{t("pg.masterData.suppliers.contactHeader")}</Label>
             <Input name="contact" />
           </div>
           <div>
-            <Label>电话</Label>
+            <Label>{t("pg.masterData.suppliers.phoneHeader")}</Label>
             <Input name="phone" />
           </div>
           {error && (
@@ -52,7 +56,9 @@ export function SupplierCreateForm() {
           )}
           <div className="md:col-span-3">
             <Button type="submit" disabled={pending}>
-              {pending ? "保存中…" : "创建"}
+              {pending
+                ? t("pg.masterData.common.saving")
+                : t("pg.masterData.common.create")}
             </Button>
           </div>
         </form>

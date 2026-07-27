@@ -1,8 +1,12 @@
 import Link from "next/link";
 import { listAtp, listStock } from "@/app/actions/inventory";
+import { getRequestLocale } from "@/app/actions/i18n";
+import { getDictionary, t } from "@/lib/i18n/dictionaries";
 import { Badge } from "@/components/ui/badge";
 
 export default async function StockPage() {
+  const locale = await getRequestLocale();
+  const messages = getDictionary(locale);
   const [stock, atp] = await Promise.all([listStock(), listAtp()]);
   const atpMap = new Map(atp.map((row) => [row.product_id, row]));
 
@@ -10,17 +14,18 @@ export default async function StockPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold">查看库存</h1>
+          <h1 className="text-2xl font-semibold">
+            {t(messages, "pg.inventory.stockTitle")}
+          </h1>
           <p className="mt-1 text-sm text-stone-500">
-            按储位与批次展示在手、占用与商品级 ATP。盘点差异请走库存调整
-            (ADJ)。
+            {t(messages, "pg.inventory.stockDesc")}
           </p>
         </div>
         <Link
           href="/inventory/adj"
           className="rounded-md bg-teal-800 px-3 py-2 text-sm font-medium text-white hover:bg-teal-900"
         >
-          库存调整 (ADJ)
+          {t(messages, "pg.inventory.adjTitle")}
         </Link>
       </div>
 
@@ -28,14 +33,14 @@ export default async function StockPage() {
         <table className="w-full text-left text-sm">
           <thead className="bg-stone-50 text-stone-500">
             <tr>
-              <th className="px-4 py-3">商品</th>
-              <th className="px-4 py-3">储位</th>
-              <th className="px-4 py-3">LOT / 效期</th>
-              <th className="px-4 py-3">在手件数</th>
-              <th className="px-4 py-3">在手重量</th>
-              <th className="px-4 py-3">占用件数</th>
-              <th className="px-4 py-3">ATP 件数</th>
-              <th className="px-4 py-3">ATP 重量</th>
+              <th className="px-4 py-3">{t(messages, "pg.inventory.colProduct")}</th>
+              <th className="px-4 py-3">{t(messages, "pg.inventory.colLocation")}</th>
+              <th className="px-4 py-3">{t(messages, "pg.inventory.colLotExpiry")}</th>
+              <th className="px-4 py-3">{t(messages, "pg.inventory.colOnHandUnits")}</th>
+              <th className="px-4 py-3">{t(messages, "pg.inventory.colOnHandWeight")}</th>
+              <th className="px-4 py-3">{t(messages, "pg.inventory.colAllocatedUnits")}</th>
+              <th className="px-4 py-3">{t(messages, "pg.inventory.colAtpUnits")}</th>
+              <th className="px-4 py-3">{t(messages, "pg.inventory.colAtpWeight")}</th>
             </tr>
           </thead>
           <tbody>
@@ -69,7 +74,7 @@ export default async function StockPage() {
                   <td className="px-4 py-3">
                     <span className="font-mono text-xs">{batch?.lot_no}</span>
                     <div className="text-xs text-stone-400">
-                      {batch?.expiry_date ?? "无效期"}
+                      {batch?.expiry_date ?? t(messages, "pg.inventory.noExpiry")}
                     </div>
                   </td>
                   <td className="px-4 py-3 tabular-nums">{row.qty_units}</td>
@@ -94,7 +99,7 @@ export default async function StockPage() {
                   colSpan={8}
                   className="px-4 py-8 text-center text-stone-400"
                 >
-                  暂无库存
+                  {t(messages, "pg.inventory.emptyStock")}
                 </td>
               </tr>
             )}

@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getRequestLocale } from "@/app/actions/i18n";
 import { Badge } from "@/components/ui/badge";
-import { getDictionary } from "@/lib/i18n/dictionaries";
+import { getDictionary, t } from "@/lib/i18n/dictionaries";
 import { statusLabel } from "@/lib/i18n/status";
 import {
   isWeightVarianceOverThreshold,
@@ -82,7 +82,7 @@ export default async function ThreeWayMatchPage({
     return {
       id: line.id,
       sku: product?.sku ?? "—",
-      productName: product?.name ?? "未知商品",
+      productName: product?.name ?? t(messages, "pg.receiving.unknownProduct"),
       ordered_units: Number(line.ordered_units),
       supplier_claimed_units: Number(line.supplier_claimed_units),
       invoice_claimed_units: Number(line.invoice_claimed_units),
@@ -104,15 +104,16 @@ export default async function ThreeWayMatchPage({
             href="/purchasing/receiving"
             className="text-sm text-stone-500 hover:text-stone-800"
           >
-            ← 收货列表
+            ← {t(messages, "pg.receiving.backToList")}
           </Link>
           <h1 className="mt-2 text-2xl font-semibold">
-            单据核对 {receipt.gr_number}
+            {t(messages, "pg.receiving.stepMatch")} {receipt.gr_number}
           </h1>
           <p className="mt-1 text-sm text-stone-500">
             {supplier?.name ?? "—"} · SL{" "}
             {receipt.supplier_document_no || "—"} · INV{" "}
-            {receipt.supplier_invoice_no || "—"} · 采购单 {po?.po_number}
+            {receipt.supplier_invoice_no || "—"} ·{" "}
+            {t(messages, "pg.receiving.poLabel")} {po?.po_number}
           </p>
         </div>
         <Badge
@@ -131,9 +132,10 @@ export default async function ThreeWayMatchPage({
       <ReceivingWorkflowNav receiptId={id} active="match" />
 
       <div className="rounded-md border border-stone-200 bg-stone-50 px-4 py-3 text-sm text-stone-700">
-        此处首次同时展示订购、Shipping List、Invoice 与现场实收。四方件数一致方可过账；实收
-        / Shipping List / Invoice 不一致时须填写差异原因。称重品重量偏差超过{" "}
-        {tolerancePct}%（设置项 receiving_weight_tolerance_pct）仅 warning，不阻断。
+        {t(messages, "pg.receiving.matchHint").replace(
+          "{x}",
+          String(tolerancePct),
+        )}
       </div>
 
       <ThreeWayMatchForm

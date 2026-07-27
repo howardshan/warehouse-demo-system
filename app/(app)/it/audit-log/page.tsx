@@ -2,40 +2,48 @@ import { redirect } from "next/navigation";
 import { listAuditLog } from "@/app/actions/inventory";
 import { getSessionAccess, can } from "@/lib/auth/access";
 import { createClient } from "@/lib/supabase/server";
+import { getRequestLocale } from "@/app/actions/i18n";
+import { getDictionary, t, type Messages } from "@/lib/i18n/dictionaries";
 import { Badge } from "@/components/ui/badge";
 import { Select } from "@/components/ui/select";
 
-const TABLE_LABELS: Record<string, string> = {
-  products: "商品",
-  customers: "客户",
-  sales_orders: "销售订单",
-  so_lines: "销售订单行",
-  stock: "库存",
-  batches: "批次",
-  goods_receipts: "收货单",
-  gr_lines: "收货行",
-  purchase_orders: "采购订单",
-  po_lines: "采购订单行",
-  inventory_adjustments: "库存调整",
-  replenishment_tasks: "补货任务",
-  suppliers: "供应商",
-  locations: "储位",
-  settings: "系统设置",
-  user_profiles: "用户档案",
-  user_permissions: "用户权限",
-  shipping_lists: "发运单",
-  sl_lines: "发运行",
-  return_notes: "退货单",
-  return_lines: "退货行",
+const TABLE_LABEL_KEYS: Record<string, string> = {
+  products: "pg.it.tableProducts",
+  customers: "pg.it.tableCustomers",
+  sales_orders: "pg.it.tableSalesOrders",
+  so_lines: "pg.it.tableSoLines",
+  stock: "pg.it.tableStock",
+  batches: "pg.it.tableBatches",
+  goods_receipts: "pg.it.tableGoodsReceipts",
+  gr_lines: "pg.it.tableGrLines",
+  purchase_orders: "pg.it.tablePurchaseOrders",
+  po_lines: "pg.it.tablePoLines",
+  inventory_adjustments: "pg.it.tableInventoryAdjustments",
+  replenishment_tasks: "pg.it.tableReplenishmentTasks",
+  suppliers: "pg.it.tableSuppliers",
+  locations: "pg.it.tableLocations",
+  settings: "pg.it.tableSettings",
+  user_profiles: "pg.it.tableUserProfiles",
+  user_permissions: "pg.it.tableUserPermissions",
+  shipping_lists: "pg.it.tableShippingLists",
+  sl_lines: "pg.it.tableSlLines",
+  return_notes: "pg.it.tableReturnNotes",
+  return_lines: "pg.it.tableReturnLines",
 };
 
-const ACTION_LABELS: Record<string, string> = {
-  insert: "创建",
-  update: "修改",
-  delete: "删除",
+const ACTION_LABEL_KEYS: Record<string, string> = {
+  insert: "pg.it.actionInsert",
+  update: "pg.it.actionUpdate",
+  delete: "pg.it.actionDelete",
 };
+
+function tableLabel(messages: Messages, name: string) {
+  const key = TABLE_LABEL_KEYS[name];
+  return key ? t(messages, key, name) : name;
+}
 
 function summarizeDiff(
+  messages: Messages,
   action: string,
   oldValues: Record<string, unknown> | null,
   newValues: Record<string, unknown> | null,
@@ -45,7 +53,7 @@ function summarizeDiff(
     return keys.map((k) => `${k}=${JSON.stringify(newValues[k])}`).join(" · ");
   }
   if (action === "delete" && oldValues) {
-    return "记录已删除";
+    return t(messages, "pg.it.recordDeleted");
   }
   if (oldValues && newValues) {
     const changed: string[] = [];
@@ -60,7 +68,7 @@ function summarizeDiff(
       }
       if (changed.length >= 5) break;
     }
-    return changed.join(" · ") || "（无字段变化或仅时间戳）";
+    return changed.join(" · ") || t(messages, "pg.it.noFieldChange");
   }
   return "—";
 }
@@ -71,6 +79,8 @@ export default async function AuditLogPage({
   searchParams: Promise<{ table?: string }>;
 }) {
   const access = await getSessionAccess();
+  const locale = await getRequestLocale();
+  const messages = getDictionary(locale);
   if (!can(access.permissions, "audit.log.read")) {
     redirect("/dashboard");
   }
@@ -94,27 +104,27 @@ export default async function AuditLogPage({
     }
   }
 
-  const tables = Object.keys(TABLE_LABELS);
+  const tables = Object.keys(TABLE_LABEL_KEYS);
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold">操作日志</h1>
+        <h1 className="text-2xl font-semibold">{t(messages, "pg.it.auditLogTitle")}</h1>
         <p className="mt-1 text-sm text-stone-500">
-          系统对创建、修改、删除的统一留痕。库存调整、收货、销售、主数据等关键变更均记录于此。
+          {t(messages, "pg.it.auditLogHint")}
         </p>
       </div>
 
       <form className="flex flex-wrap items-end gap-3">
         <div>
           <label className="mb-1 block text-sm font-medium text-stone-700">
-            按表筛选
+            {t(messages, "pg.it.filterByTable")}
           </label>
           <Select name="table" defaultValue={tableName ?? ""} className="w-56">
-            <option value="">全部</option>
-            {tables.map((t) => (
-              <option key={t} value={t}>
-                {TABLE_LABELS[t] ?? t} ({t})
+            <option value="">{t(messages, "pg.it.all")}</option>
+            {tables.map((name) => (
+              <option key={name} value={name}>
+                {tableLabel(messages, name)} ({name})
               </option>
             ))}
           </Select>
@@ -123,7 +133,7 @@ export default async function AuditLogPage({
           type="submit"
           className="h-10 rounded-md bg-teal-800 px-4 text-sm font-medium text-white hover:bg-teal-900"
         >
-          筛选
+          {t(messages, "pg.it.filter")}
         </button>
       </form>
 
@@ -131,12 +141,12 @@ export default async function AuditLogPage({
         <table className="w-full text-left text-sm">
           <thead className="bg-stone-50 text-stone-500">
             <tr>
-              <th className="px-4 py-3">时间</th>
-              <th className="px-4 py-3">对象</th>
-              <th className="px-4 py-3">动作</th>
-              <th className="px-4 py-3">操作人</th>
-              <th className="px-4 py-3">记录 ID</th>
-              <th className="px-4 py-3">变更摘要</th>
+              <th className="px-4 py-3">{t(messages, "pg.it.colTime")}</th>
+              <th className="px-4 py-3">{t(messages, "pg.it.colObject")}</th>
+              <th className="px-4 py-3">{t(messages, "pg.it.colAction")}</th>
+              <th className="px-4 py-3">{t(messages, "pg.it.colOperator")}</th>
+              <th className="px-4 py-3">{t(messages, "pg.it.colRecordId")}</th>
+              <th className="px-4 py-3">{t(messages, "pg.it.colSummary")}</th>
             </tr>
           </thead>
           <tbody>
@@ -146,7 +156,7 @@ export default async function AuditLogPage({
                   {new Date(row.created_at).toLocaleString("zh-CN")}
                 </td>
                 <td className="px-4 py-3">
-                  {TABLE_LABELS[row.table_name] ?? row.table_name}
+                  {tableLabel(messages, row.table_name)}
                   <div className="font-mono text-[10px] text-stone-400">
                     {row.table_name}
                   </div>
@@ -161,20 +171,23 @@ export default async function AuditLogPage({
                           : "neutral"
                     }
                   >
-                    {ACTION_LABELS[row.action] ?? row.action}
+                    {ACTION_LABEL_KEYS[row.action]
+                      ? t(messages, ACTION_LABEL_KEYS[row.action], row.action)
+                      : row.action}
                   </Badge>
                 </td>
                 <td className="px-4 py-3 text-sm">
                   {row.changed_by
                     ? (nameMap.get(row.changed_by) ??
                       row.changed_by.slice(0, 8))
-                    : "系统"}
+                    : t(messages, "pg.it.system")}
                 </td>
                 <td className="px-4 py-3 font-mono text-[10px] text-stone-500">
                   {row.record_id ? `${row.record_id.slice(0, 8)}…` : "—"}
                 </td>
                 <td className="max-w-md px-4 py-3 text-xs break-all text-stone-600">
                   {summarizeDiff(
+                    messages,
                     row.action,
                     row.old_values as Record<string, unknown> | null,
                     row.new_values as Record<string, unknown> | null,
@@ -188,7 +201,7 @@ export default async function AuditLogPage({
                   colSpan={6}
                   className="px-4 py-8 text-center text-stone-400"
                 >
-                  暂无日志
+                  {t(messages, "pg.it.auditEmpty")}
                 </td>
               </tr>
             )}

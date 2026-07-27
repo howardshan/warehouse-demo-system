@@ -4,10 +4,14 @@ import {
   listStock,
 } from "@/app/actions/inventory";
 import { createClient } from "@/lib/supabase/server";
+import { getRequestLocale } from "@/app/actions/i18n";
+import { getDictionary, t } from "@/lib/i18n/dictionaries";
 import { Badge } from "@/components/ui/badge";
 import { StockAdjustForm } from "./adj-form";
 
 export default async function InventoryAdjPage() {
+  const locale = await getRequestLocale();
+  const messages = getDictionary(locale);
   const [stock, adjustments] = await Promise.all([
     listStock(),
     listInventoryAdjustments(),
@@ -40,7 +44,7 @@ export default async function InventoryAdjPage() {
       (Array.isArray(batch.products) ? batch.products[0] : batch.products);
     return {
       id: row.id,
-      label: `${product?.sku ?? "—"} · ${product?.name ?? "—"} · ${location?.code ?? "—"} · LOT ${batch?.lot_no ?? "—"} · ${row.qty_units}件`,
+      label: `${product?.sku ?? "—"} · ${product?.name ?? "—"} · ${location?.code ?? "—"} · LOT ${batch?.lot_no ?? "—"} · ${row.qty_units}${t(messages, "pg.inventory.pcsSuffix")}`,
       qty_units: Number(row.qty_units),
       qty_weight_lb: Number(row.qty_weight_lb),
       allocated_units: Number(row.allocated_units),
@@ -54,11 +58,14 @@ export default async function InventoryAdjPage() {
           href="/inventory/stock"
           className="text-sm text-teal-800 hover:underline"
         >
-          ← 查看库存
+          {"← "}
+          {t(messages, "pg.inventory.stockTitle")}
         </Link>
-        <h1 className="mt-2 text-2xl font-semibold">库存调整 (ADJ)</h1>
+        <h1 className="mt-2 text-2xl font-semibold">
+          {t(messages, "pg.inventory.adjTitle")}
+        </h1>
         <p className="mt-1 text-sm text-stone-500">
-          盘点差异、损耗等在此改数；每次调整写入调整单与系统操作日志。
+          {t(messages, "pg.inventory.adjDesc")}
         </p>
       </div>
 
@@ -66,18 +73,18 @@ export default async function InventoryAdjPage() {
 
       <div className="overflow-hidden rounded-lg border border-stone-200 bg-white">
         <div className="border-b border-stone-100 px-4 py-3 font-semibold">
-          最近调整记录
+          {t(messages, "pg.inventory.recentAdjustments")}
         </div>
         <table className="w-full text-left text-sm">
           <thead className="bg-stone-50 text-stone-500">
             <tr>
-              <th className="px-4 py-3">时间</th>
-              <th className="px-4 py-3">商品</th>
-              <th className="px-4 py-3">储位 / LOT</th>
-              <th className="px-4 py-3">件数</th>
-              <th className="px-4 py-3">重量 lb</th>
-              <th className="px-4 py-3">原因</th>
-              <th className="px-4 py-3">操作人</th>
+              <th className="px-4 py-3">{t(messages, "pg.inventory.colTime")}</th>
+              <th className="px-4 py-3">{t(messages, "pg.inventory.colProduct")}</th>
+              <th className="px-4 py-3">{t(messages, "pg.inventory.colLocationLot")}</th>
+              <th className="px-4 py-3">{t(messages, "pg.inventory.colUnits")}</th>
+              <th className="px-4 py-3">{t(messages, "pg.inventory.colWeightLb")}</th>
+              <th className="px-4 py-3">{t(messages, "pg.inventory.colReason")}</th>
+              <th className="px-4 py-3">{t(messages, "pg.inventory.colOperator")}</th>
             </tr>
           </thead>
           <tbody>
@@ -134,7 +141,7 @@ export default async function InventoryAdjPage() {
                   colSpan={7}
                   className="px-4 py-8 text-center text-stone-400"
                 >
-                  暂无调整记录
+                  {t(messages, "pg.inventory.emptyAdjustments")}
                 </td>
               </tr>
             )}

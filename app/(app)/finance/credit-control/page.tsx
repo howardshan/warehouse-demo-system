@@ -1,9 +1,13 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
+import { getRequestLocale } from "@/app/actions/i18n";
+import { getDictionary, t } from "@/lib/i18n/dictionaries";
 import { createClient } from "@/lib/supabase/server";
 import { formatMoney } from "@/lib/utils";
 
 export default async function CreditControlPage() {
+  const locale = await getRequestLocale();
+  const messages = getDictionary(locale);
   const supabase = await createClient();
   const [{ data: rows }, { data: customers }] = await Promise.all([
     supabase.from("v_credit_exposure").select(
@@ -13,9 +17,9 @@ export default async function CreditControlPage() {
   ]);
   const customerById = new Map((customers ?? []).map((customer) => [customer.id, customer]));
   return <div className="space-y-6">
-    <div><h1 className="text-2xl font-semibold">信用控制台</h1><p className="mt-1 text-sm text-stone-500">占用包含已确认未发货与已签收未开票金额（铁律 5）。</p></div>
-    <Card><CardHeader><h2 className="font-semibold">客户信用敞口</h2></CardHeader><CardBody className="overflow-x-auto">
-      <table className="w-full text-left text-sm"><thead className="text-stone-500"><tr><th className="py-2">客户</th><th className="py-2 text-right">额度</th><th className="py-2 text-right">未发订单</th><th className="py-2 text-right">签收未开票</th><th className="py-2 text-right">总占用</th><th className="py-2 text-right">可用</th><th className="py-2 text-right">状态</th></tr></thead>
+    <div><h1 className="text-2xl font-semibold">{t(messages, "pg.finance.creditControlTitle")}</h1><p className="mt-1 text-sm text-stone-500">{t(messages, "pg.finance.creditControlHint")}</p></div>
+    <Card><CardHeader><h2 className="font-semibold">{t(messages, "pg.finance.creditExposure")}</h2></CardHeader><CardBody className="overflow-x-auto">
+      <table className="w-full text-left text-sm"><thead className="text-stone-500"><tr><th className="py-2">{t(messages, "pg.finance.customer")}</th><th className="py-2 text-right">{t(messages, "pg.finance.creditLimit")}</th><th className="py-2 text-right">{t(messages, "pg.finance.openOrders")}</th><th className="py-2 text-right">{t(messages, "pg.finance.signedUninvoiced")}</th><th className="py-2 text-right">{t(messages, "pg.finance.totalExposure")}</th><th className="py-2 text-right">{t(messages, "pg.finance.available")}</th><th className="py-2 text-right">{t(messages, "pg.finance.status")}</th></tr></thead>
       <tbody>{(rows ?? []).map((row) => {
         const customer = customerById.get(row.customer_id);
         const available = Number(row.available_credit);
