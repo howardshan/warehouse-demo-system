@@ -1,10 +1,17 @@
 import { getRequestLocale } from "@/app/actions/i18n";
 import { getDictionary, t } from "@/lib/i18n/dictionaries";
+import { createClient } from "@/lib/supabase/server";
 import { CustomerCreateForm } from "../customer-form";
 
 export default async function NewCustomerPage() {
   const locale = await getRequestLocale();
   const messages = getDictionary(locale);
+  const supabase = await createClient();
+  const { data: routes } = await supabase
+    .from("routes")
+    .select("id, code, name")
+    .eq("is_active", true)
+    .order("code");
 
   return (
     <div className="space-y-6">
@@ -14,7 +21,7 @@ export default async function NewCustomerPage() {
           {t(messages, "pg.customers.newCustomerHint")}
         </p>
       </div>
-      <CustomerCreateForm />
+      <CustomerCreateForm routes={routes ?? []} />
     </div>
   );
 }

@@ -79,12 +79,9 @@
     "rolePermissions": "角色权限",
     "auditLog": "操作日志",
     "settings": "系统设置",
-<<<<<<< HEAD
     "payments": "付款记录",
-    "allOrders": "所有订单"
-=======
+    "allOrders": "所有订单",
     "routes": "配送路线"
->>>>>>> 81fe284f9fcafb093982c6de6b8a33316a2e38cc
   },
   "it": {
     "usersTitle": "用户与角色",
@@ -148,7 +145,6 @@
       "cancelled": "已取消"
     }
   },
-<<<<<<< HEAD
   "pg": {
     "inventory": {
       "stockTitle": "查看库存",
@@ -1077,7 +1073,7 @@
       "back": "所有订单",
       "status": "状态"
     }
-=======
+  },
   "roles": {
     "admin": "管理员",
     "it": "IT",
@@ -1088,6 +1084,5 @@
     "account": "账户",
     "finance": "财务",
     "driver": "司机"
->>>>>>> 81fe284f9fcafb093982c6de6b8a33316a2e38cc
   }
 }

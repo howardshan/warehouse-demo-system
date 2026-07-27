@@ -79,12 +79,9 @@
     "rolePermissions": "Role permissions",
     "auditLog": "Audit log",
     "settings": "Settings",
-<<<<<<< HEAD
     "payments": "Payments",
-    "allOrders": "All orders"
-=======
+    "allOrders": "All orders",
     "routes": "Delivery routes"
->>>>>>> 81fe284f9fcafb093982c6de6b8a33316a2e38cc
   },
   "it": {
     "usersTitle": "Users & roles",
@@ -148,7 +145,6 @@
       "cancelled": "Cancelled"
     }
   },
-<<<<<<< HEAD
   "pg": {
     "inventory": {
       "stockTitle": "Stock",
@@ -1077,7 +1073,7 @@
       "back": "All orders",
       "status": "Status"
     }
-=======
+  },
   "roles": {
     "admin": "Admin",
     "it": "IT",
@@ -1088,6 +1084,5 @@
     "account": "Account",
     "finance": "Finance",
     "driver": "Driver"
->>>>>>> 81fe284f9fcafb093982c6de6b8a33316a2e38cc
   }
 }
