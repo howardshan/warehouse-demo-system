@@ -4,6 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { setRolePermissions } from "@/app/actions/it";
 import { APP_ROLE_LABELS, type AppRole } from "@/lib/auth/roles";
+import { useI18n } from "@/components/i18n/provider";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
@@ -22,6 +23,7 @@ export function RolePermissionsEditor({
   grantedKeys: string[];
 }) {
   const router = useRouter();
+  const { t } = useI18n();
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [checked, setChecked] = useState<Record<string, boolean>>(() => {
@@ -50,7 +52,7 @@ export function RolePermissionsEditor({
       <div className="flex flex-wrap items-end gap-4">
         <div className="max-w-xs">
           <label className="mb-1 block text-sm font-medium text-stone-700">
-            选择角色
+            {t("pg.it.selectRole")}
           </label>
           <Select
             value={selectedRole}
@@ -66,8 +68,10 @@ export function RolePermissionsEditor({
           </Select>
         </div>
         <p className="pb-2 text-sm text-stone-500">
-          已选 {selectedCount} / {permissions.length} 项
-          {isAdmin && " · 管理员始终拥有全部权限"}
+          {t("pg.it.selectedCount")
+            .replace("{n}", String(selectedCount))
+            .replace("{total}", String(permissions.length))}
+          {isAdmin && t("pg.it.adminAlwaysAll")}
         </p>
       </div>
 
@@ -90,7 +94,7 @@ export function RolePermissionsEditor({
                     })
                   }
                 >
-                  全选本模块
+                  {t("pg.it.selectAllModule")}
                 </button>
                 <button
                   type="button"
@@ -103,7 +107,7 @@ export function RolePermissionsEditor({
                     })
                   }
                 >
-                  清空
+                  {t("pg.it.clear")}
                 </button>
               </div>
             )}
@@ -156,7 +160,11 @@ export function RolePermissionsEditor({
           });
         }}
       >
-        {pending ? "保存中…" : isAdmin ? "管理员权限不可改" : "保存角色权限"}
+        {pending
+          ? t("pg.it.saving")
+          : isAdmin
+            ? t("pg.it.adminNotEditable")
+            : t("pg.it.saveRolePermissions")}
       </Button>
     </div>
   );

@@ -8,17 +8,21 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
+import { useI18n } from "@/components/i18n/provider";
 
 export function LocationCreateForm() {
+  const { t } = useI18n();
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
   return (
     <Card>
       <CardHeader>
-        <h2 className="text-lg font-semibold">新建储位</h2>
+        <h2 className="text-lg font-semibold">
+          {t("pg.masterData.locations.form.newTitle")}
+        </h2>
         <p className="text-sm text-stone-500">
-          pick_face = 固定拣货位（一 SKU 一位，同时只能一批号 — 铁律 7）
+          {t("pg.masterData.locations.form.newHint")}
         </p>
       </CardHeader>
       <CardBody>
@@ -41,21 +45,21 @@ export function LocationCreateForm() {
           }}
         >
           <div>
-            <Label>编码</Label>
+            <Label>{t("pg.masterData.common.code")}</Label>
             <Input name="code" placeholder="PF-A01" required />
           </div>
           <div>
-            <Label>类型</Label>
+            <Label>{t("pg.masterData.locations.typeHeader")}</Label>
             <Select name="type" defaultValue="pick_face">
-              {LOCATION_TYPES.map((t) => (
-                <option key={t} value={t}>
-                  {t}
+              {LOCATION_TYPES.map((lt) => (
+                <option key={lt} value={lt}>
+                  {lt}
                 </option>
               ))}
             </Select>
           </div>
           <div>
-            <Label>温区</Label>
+            <Label>{t("pg.masterData.common.tempZone")}</Label>
             <Select name="temp_zone" defaultValue="chilled">
               {TEMP_ZONES.map((z) => (
                 <option key={z} value={z}>
@@ -69,7 +73,9 @@ export function LocationCreateForm() {
           )}
           <div className="md:col-span-3">
             <Button type="submit" disabled={pending}>
-              {pending ? "保存中…" : "创建"}
+              {pending
+                ? t("pg.masterData.common.saving")
+                : t("pg.masterData.common.create")}
             </Button>
           </div>
         </form>

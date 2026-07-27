@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getRequestLocale } from "@/app/actions/i18n";
 import { Badge } from "@/components/ui/badge";
-import { getDictionary } from "@/lib/i18n/dictionaries";
+import { getDictionary, t } from "@/lib/i18n/dictionaries";
 import { statusLabel } from "@/lib/i18n/status";
 import { BlindReceivingForm } from "../../purchasing-forms";
 import { ReceivingWorkflowNav } from "../receiving-workflow-nav";
@@ -54,7 +54,7 @@ export default async function BlindReceivingPage({
     return {
       id: line.id,
       sku: product?.sku ?? "—",
-      productName: product?.name ?? "未知商品",
+      productName: product?.name ?? t(messages, "pg.receiving.unknownProduct"),
       actual_units: Number(line.actual_units),
       actual_weight_lb: Number(line.actual_weight_lb),
       lot_no: line.lot_no,
@@ -74,13 +74,14 @@ export default async function BlindReceivingPage({
             href="/purchasing/receiving"
             className="text-sm text-stone-500 hover:text-stone-800"
           >
-            ← 收货列表
+            ← {t(messages, "pg.receiving.backToList")}
           </Link>
           <h1 className="mt-2 text-2xl font-semibold">
-            现场盲收 {receipt.gr_number}
+            {t(messages, "pg.receiving.stepBlind")} {receipt.gr_number}
           </h1>
           <p className="mt-1 text-sm text-stone-500">
-            {supplier?.name ?? "—"} · 采购单 {po?.po_number}
+            {supplier?.name ?? "—"} · {t(messages, "pg.receiving.poLabel")}{" "}
+            {po?.po_number}
           </p>
         </div>
         <Badge
@@ -99,10 +100,11 @@ export default async function BlindReceivingPage({
       <ReceivingWorkflowNav receiptId={id} active="blind" />
 
       <div className="rounded-md border border-teal-200 bg-teal-50 px-4 py-3 text-sm text-teal-900">
-        只清点实收件数、重量与批号。本页不展示采购订购数量，也不展示 Shipping List /
-        Invoice 声称数量。
+        {t(messages, "pg.receiving.blindHint")}
         <span className="ml-1">
-          标 <span className="text-red-600">*</span> 为必填。
+          {t(messages, "pg.receiving.requiredMarkPre")}
+          <span className="text-red-600">*</span>
+          {t(messages, "pg.receiving.requiredMarkPost")}
         </span>
       </div>
 

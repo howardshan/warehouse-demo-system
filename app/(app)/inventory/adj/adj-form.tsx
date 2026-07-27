@@ -8,6 +8,7 @@ import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
+import { useI18n } from "@/components/i18n/provider";
 
 export type AdjStockOption = {
   id: string;
@@ -18,15 +19,16 @@ export type AdjStockOption = {
 };
 
 const REASONS = [
-  { value: "stock_mismatch", label: "库存不符 / 盘点差异" },
-  { value: "quality_reject", label: "质量拒收 / 损耗" },
-  { value: "near_expiry", label: "临期报损" },
-  { value: "underweight", label: "重量不足" },
-  { value: "out_of_stock", label: "缺货 / 短少" },
-  { value: "other", label: "其他" },
+  { value: "stock_mismatch", labelKey: "pg.inventory.reasonStockMismatch" },
+  { value: "quality_reject", labelKey: "pg.inventory.reasonQualityReject" },
+  { value: "near_expiry", labelKey: "pg.inventory.reasonNearExpiry" },
+  { value: "underweight", labelKey: "pg.inventory.reasonUnderweight" },
+  { value: "out_of_stock", labelKey: "pg.inventory.reasonOutOfStock" },
+  { value: "other", labelKey: "pg.inventory.reasonOther" },
 ] as const;
 
 export function StockAdjustForm({ stocks }: { stocks: AdjStockOption[] }) {
+  const { t } = useI18n();
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [stockId, setStockId] = useState("");
@@ -36,9 +38,9 @@ export function StockAdjustForm({ stocks }: { stocks: AdjStockOption[] }) {
   return (
     <Card>
       <CardHeader>
-        <h2 className="text-lg font-semibold">新建库存调整 (ADJ)</h2>
+        <h2 className="text-lg font-semibold">{t("pg.inventory.newAdjTitle")}</h2>
         <p className="text-sm text-stone-500">
-          选择现有库存行，填写调整后在手量。数量变更必须选择差异原因，并写入操作日志。
+          {t("pg.inventory.newAdjDesc")}
         </p>
       </CardHeader>
       <CardBody>
@@ -66,7 +68,7 @@ export function StockAdjustForm({ stocks }: { stocks: AdjStockOption[] }) {
           }}
         >
           <div className="md:col-span-2">
-            <Label required>库存行</Label>
+            <Label required>{t("pg.inventory.stockRow")}</Label>
             <Select
               name="stock_id"
               required
@@ -74,7 +76,7 @@ export function StockAdjustForm({ stocks }: { stocks: AdjStockOption[] }) {
               onChange={(e) => setStockId(e.target.value)}
             >
               <option value="" disabled>
-                请选择商品 / 储位 / LOT
+                {t("pg.inventory.selectStockPlaceholder")}
               </option>
               {stocks.map((s) => (
                 <option key={s.id} value={s.id}>
@@ -84,13 +86,15 @@ export function StockAdjustForm({ stocks }: { stocks: AdjStockOption[] }) {
             </Select>
             {selected && (
               <p className="mt-2 text-sm text-stone-600">
-                当前在手：{selected.qty_units} 件 / {selected.qty_weight_lb} lb
-                · 已占用 {selected.allocated_units} 件
+                {t("pg.inventory.currentOnHand")
+                  .replace("{u}", String(selected.qty_units))
+                  .replace("{w}", String(selected.qty_weight_lb))
+                  .replace("{a}", String(selected.allocated_units))}
               </p>
             )}
           </div>
           <div>
-            <Label required>调整后件数</Label>
+            <Label required>{t("pg.inventory.afterUnits")}</Label>
             <Input
               name="after_units"
               type="number"
@@ -102,7 +106,7 @@ export function StockAdjustForm({ stocks }: { stocks: AdjStockOption[] }) {
             />
           </div>
           <div>
-            <Label required>调整后重量 (lb)</Label>
+            <Label required>{t("pg.inventory.afterWeight")}</Label>
             <Input
               name="after_weight_lb"
               type="number"
@@ -114,28 +118,28 @@ export function StockAdjustForm({ stocks }: { stocks: AdjStockOption[] }) {
             />
           </div>
           <div>
-            <Label required>差异原因</Label>
+            <Label required>{t("pg.inventory.varianceReason")}</Label>
             <Select name="variance_reason" required defaultValue="">
               <option value="" disabled>
-                请选择
+                {t("pg.inventory.selectPlaceholder")}
               </option>
               {REASONS.map((r) => (
                 <option key={r.value} value={r.value}>
-                  {r.label}
+                  {t(r.labelKey)}
                 </option>
               ))}
             </Select>
           </div>
           <div>
-            <Label>备注</Label>
-            <Input name="notes" placeholder="可选说明" />
+            <Label>{t("pg.inventory.notes")}</Label>
+            <Input name="notes" placeholder={t("pg.inventory.notesPlaceholder")} />
           </div>
           {error && (
             <p className="md:col-span-2 text-sm text-red-700">{error}</p>
           )}
           <div className="md:col-span-2">
             <Button type="submit" disabled={pending || !stockId}>
-              {pending ? "提交中…" : "提交调整"}
+              {pending ? t("pg.inventory.submitting") : t("pg.inventory.submitAdj")}
             </Button>
           </div>
         </form>

@@ -7,8 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
+import { useI18n } from "@/components/i18n/provider";
 
 export default function LoginForm() {
+  const { t } = useI18n();
   const router = useRouter();
   const search = useSearchParams();
   const next = search.get("next") || "/dashboard";
@@ -25,10 +27,10 @@ export default function LoginForm() {
             Food Distribution
           </div>
           <h1 className="mt-1 text-2xl font-semibold text-stone-900">
-            登录仓配系统
+            {t("pg.login.title")}
           </h1>
           <p className="mt-1 text-sm text-stone-500">
-            使用 Supabase Auth 账号进入
+            {t("pg.login.subtitle")}
           </p>
         </CardHeader>
         <CardBody>
@@ -49,7 +51,7 @@ export default function LoginForm() {
             }}
           >
             <div>
-              <Label htmlFor="email">邮箱</Label>
+              <Label htmlFor="email">{t("pg.login.emailLabel")}</Label>
               <Input
                 id="email"
                 type="email"
@@ -60,7 +62,7 @@ export default function LoginForm() {
               />
             </div>
             <div>
-              <Label htmlFor="password">密码</Label>
+              <Label htmlFor="password">{t("pg.login.passwordLabel")}</Label>
               <Input
                 id="password"
                 type="password"
@@ -76,7 +78,7 @@ export default function LoginForm() {
               </p>
             )}
             <Button type="submit" className="w-full" disabled={pending}>
-              {pending ? "登录中…" : "登录"}
+              {pending ? t("pg.login.submitting") : t("pg.login.submit")}
             </Button>
           </form>
         </CardBody>

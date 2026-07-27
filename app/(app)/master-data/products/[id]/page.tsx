@@ -2,6 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ProductForm } from "../product-form";
+import { getRequestLocale } from "@/app/actions/i18n";
+import { getDictionary, t } from "@/lib/i18n/dictionaries";
 
 export default async function ProductEditPage({
   params,
@@ -9,6 +11,8 @@ export default async function ProductEditPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const locale = await getRequestLocale();
+  const messages = getDictionary(locale);
   const supabase = await createClient();
   const [{ data: product }, { data: locations }, { data: families }] =
     await Promise.all([
@@ -52,9 +56,11 @@ export default async function ProductEditPage({
           href="/master-data/products"
           className="text-sm text-stone-500 hover:text-stone-800"
         >
-          ← 返回商品列表
+          {t(messages, "pg.masterData.products.backToList")}
         </Link>
-        <h1 className="mt-2 text-2xl font-semibold">编辑商品</h1>
+        <h1 className="mt-2 text-2xl font-semibold">
+          {t(messages, "pg.masterData.products.editTitle")}
+        </h1>
         <p className="mt-1 text-sm text-stone-500">
           {product.sku} · {product.name}
         </p>

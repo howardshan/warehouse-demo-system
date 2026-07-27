@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import { getSessionAccess, can } from "@/lib/auth/access";
 import { APP_ROLES, APP_ROLE_LABELS, isAppRole } from "@/lib/auth/roles";
 import { createClient } from "@/lib/supabase/server";
+import { getRequestLocale } from "@/app/actions/i18n";
+import { getDictionary, t } from "@/lib/i18n/dictionaries";
 import { RolePermissionsEditor } from "./role-permissions-editor";
 
 export default async function RolePermissionsPage({
@@ -11,6 +13,8 @@ export default async function RolePermissionsPage({
   searchParams: Promise<{ role?: string }>;
 }) {
   const access = await getSessionAccess();
+  const locale = await getRequestLocale();
+  const messages = getDictionary(locale);
   if (!can(access.permissions, "it.permissions.manage")) {
     redirect("/dashboard");
   }
@@ -50,11 +54,13 @@ export default async function RolePermissionsPage({
           href="/it/permissions"
           className="text-sm text-teal-800 hover:underline"
         >
-          ← 用户功能权限覆盖
+          ← {t(messages, "pg.it.backToOverrides")}
         </Link>
-        <h1 className="mt-2 text-2xl font-semibold">角色权限</h1>
+        <h1 className="mt-2 text-2xl font-semibold">
+          {t(messages, "pg.it.rolePermissionsTitle")}
+        </h1>
         <p className="mt-1 text-sm text-stone-500">
-          为用户管理中可选的每个角色配置默认功能权限。用户级覆盖请在「功能权限」页设置。
+          {t(messages, "pg.it.rolePermissionsHint")}
         </p>
       </div>
 
@@ -62,10 +68,12 @@ export default async function RolePermissionsPage({
         <table className="w-full text-left text-sm">
           <thead className="bg-stone-50 text-stone-500">
             <tr>
-              <th className="px-4 py-3">角色</th>
-              <th className="px-4 py-3">代码</th>
-              <th className="px-4 py-3">默认权限数</th>
-              <th className="px-4 py-3">操作</th>
+              <th className="px-4 py-3">{t(messages, "pg.it.colRole")}</th>
+              <th className="px-4 py-3">{t(messages, "pg.it.colCode")}</th>
+              <th className="px-4 py-3">
+                {t(messages, "pg.it.colDefaultCount")}
+              </th>
+              <th className="px-4 py-3">{t(messages, "pg.it.colActions")}</th>
             </tr>
           </thead>
           <tbody>
@@ -83,7 +91,7 @@ export default async function RolePermissionsPage({
                     href={`/it/role-permissions?role=${role}`}
                     className="text-sm font-medium text-teal-800 hover:underline"
                   >
-                    编辑
+                    {t(messages, "pg.it.edit")}
                   </Link>
                 </td>
               </tr>

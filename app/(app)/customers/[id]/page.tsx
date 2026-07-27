@@ -1,5 +1,7 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getRequestLocale } from "@/app/actions/i18n";
+import { getDictionary, t } from "@/lib/i18n/dictionaries";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { formatMoney } from "@/lib/utils";
@@ -11,6 +13,8 @@ export default async function CustomerDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const locale = await getRequestLocale();
+  const messages = getDictionary(locale);
   const supabase = await createClient();
   const { data: customer } = await supabase
     .from("customers")
@@ -29,7 +33,7 @@ export default async function CustomerDetailPage({
     <div className="space-y-6">
       <div>
         <Link href="/customers" className="text-sm text-teal-800 hover:underline">
-          ← 客户列表
+          {t(messages, "pg.customers.backToList")}
         </Link>
         <h1 className="mt-2 text-2xl font-semibold">
           {customer.name}{" "}
@@ -42,17 +46,17 @@ export default async function CustomerDetailPage({
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader>
-            <h2 className="font-semibold">信用档案</h2>
+            <h2 className="font-semibold">{t(messages, "pg.customers.creditProfile")}</h2>
           </CardHeader>
           <CardBody className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-stone-500">额度</span>
+              <span className="text-stone-500">{t(messages, "pg.customers.creditLimit")}</span>
               <span className="tabular-nums">
                 {formatMoney(Number(customer.credit_limit))}
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-stone-500">账期</span>
+              <span className="text-stone-500">{t(messages, "pg.customers.paymentTerms")}</span>
               <span>
                 {customer.payment_terms_days === 0
                   ? "COD"
@@ -60,11 +64,11 @@ export default async function CustomerDetailPage({
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-stone-500">状态</span>
+              <span className="text-stone-500">{t(messages, "pg.customers.status")}</span>
               <Badge>{customer.credit_status}</Badge>
             </div>
             <div className="flex justify-between">
-              <span className="text-stone-500">逾期停供(天)</span>
+              <span className="text-stone-500">{t(messages, "pg.customers.overdueBlockDays")}</span>
               <span>{customer.overdue_block_days}</span>
             </div>
             {customer.credit_status_note && (
@@ -87,11 +91,11 @@ export default async function CustomerDetailPage({
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-stone-500">有效期</span>
+              <span className="text-stone-500">{t(messages, "pg.customers.validUntil")}</span>
               <span>{customer.sales_permit_expiry ?? "—"}</span>
             </div>
             <p className="text-xs text-stone-400">
-              免税凭证不是普通附件；必须有有效期，过期后看板会提醒（Phase 9）。
+              {t(messages, "pg.customers.permitHint")}
             </p>
           </CardBody>
         </Card>
@@ -99,14 +103,14 @@ export default async function CustomerDetailPage({
 
       <Card>
         <CardHeader>
-          <h2 className="font-semibold">送货地址</h2>
+          <h2 className="font-semibold">{t(messages, "pg.customers.deliveryAddresses")}</h2>
         </CardHeader>
         <CardBody>
           <ul className="space-y-2 text-sm">
             {(addresses ?? []).map((a) => (
               <li key={a.id} className="rounded border border-stone-100 p-3">
                 <div className="font-medium">
-                  {a.label ?? "地址"}
+                  {a.label ?? t(messages, "pg.customers.addressLabel")}
                   {a.is_default && (
                     <Badge className="ml-2" tone="ok">
                       default
@@ -116,13 +120,13 @@ export default async function CustomerDetailPage({
                 <div className="text-stone-600">{a.address}</div>
                 {a.delivery_window && (
                   <div className="text-xs text-stone-400">
-                    窗口: {a.delivery_window}
+                    {t(messages, "pg.customers.window")}: {a.delivery_window}
                   </div>
                 )}
               </li>
             ))}
             {(addresses ?? []).length === 0 && (
-              <li className="text-stone-400">暂无地址</li>
+              <li className="text-stone-400">{t(messages, "pg.customers.noAddresses")}</li>
             )}
           </ul>
         </CardBody>
@@ -130,7 +134,7 @@ export default async function CustomerDetailPage({
 
       <Card>
         <CardHeader>
-          <h2 className="font-semibold">联系人</h2>
+          <h2 className="font-semibold">{t(messages, "pg.customers.contacts")}</h2>
         </CardHeader>
         <CardBody>
           <ul className="space-y-2 text-sm">
@@ -146,7 +150,7 @@ export default async function CustomerDetailPage({
               </li>
             ))}
             {(contacts ?? []).length === 0 && (
-              <li className="text-stone-400">暂无联系人</li>
+              <li className="text-stone-400">{t(messages, "pg.customers.noContacts")}</li>
             )}
           </ul>
         </CardBody>

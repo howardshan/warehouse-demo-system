@@ -11,8 +11,10 @@ import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
+import { useI18n } from "@/components/i18n/provider";
 
 export function ProductCategoryCreateForm() {
+  const { t } = useI18n();
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
@@ -20,7 +22,7 @@ export function ProductCategoryCreateForm() {
   return (
     <Card>
       <CardHeader>
-        <h2 className="text-lg font-semibold">新增分类</h2>
+        <h2 className="text-lg font-semibold">{t("pg.purchasing.newCategory")}</h2>
       </CardHeader>
       <CardBody>
         <form
@@ -46,7 +48,7 @@ export function ProductCategoryCreateForm() {
           }}
         >
           <div>
-            <Label required>编码</Label>
+            <Label required>{t("pg.purchasing.code")}</Label>
             <Input
               name="code"
               placeholder="VEG"
@@ -55,16 +57,16 @@ export function ProductCategoryCreateForm() {
             />
           </div>
           <div>
-            <Label required>名称</Label>
-            <Input name="name" placeholder="蔬菜" required />
+            <Label required>{t("pg.purchasing.name")}</Label>
+            <Input name="name" placeholder={t("pg.purchasing.namePlaceholderVeg")} required />
           </div>
           <div>
-            <Label>排序</Label>
+            <Label>{t("pg.purchasing.sortOrder")}</Label>
             <Input name="sort_order" type="number" defaultValue={0} />
           </div>
           <div className="flex items-end">
             <Button type="submit" disabled={pending}>
-              {pending ? "保存中…" : "创建分类"}
+              {pending ? t("pg.purchasing.saving") : t("pg.purchasing.createCategory")}
             </Button>
           </div>
           {error && (
@@ -87,6 +89,7 @@ export function ProductCategoryEditForm({
     is_active: boolean;
   };
 }) {
+  const { t } = useI18n();
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
@@ -111,15 +114,15 @@ export function ProductCategoryEditForm({
       }}
     >
       <div>
-        <Label required>编码</Label>
+        <Label required>{t("pg.purchasing.code")}</Label>
         <Input name="code" defaultValue={category.code} required />
       </div>
       <div>
-        <Label required>名称</Label>
+        <Label required>{t("pg.purchasing.name")}</Label>
         <Input name="name" defaultValue={category.name} required />
       </div>
       <div>
-        <Label>排序</Label>
+        <Label>{t("pg.purchasing.sortOrder")}</Label>
         <Input
           name="sort_order"
           type="number"
@@ -127,15 +130,15 @@ export function ProductCategoryEditForm({
         />
       </div>
       <div>
-        <Label>状态</Label>
+        <Label>{t("pg.purchasing.status")}</Label>
         <Select name="status" defaultValue={category.is_active ? "on" : "off"}>
-          <option value="on">启用</option>
-          <option value="off">停用</option>
+          <option value="on">{t("pg.purchasing.enabled")}</option>
+          <option value="off">{t("pg.purchasing.disabled")}</option>
         </Select>
       </div>
       <div>
         <Button type="submit" size="sm" disabled={pending}>
-          {pending ? "…" : "保存"}
+          {pending ? "…" : t("pg.purchasing.save")}
         </Button>
         {error && <p className="mt-1 text-xs text-red-700">{error}</p>}
       </div>

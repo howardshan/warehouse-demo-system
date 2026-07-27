@@ -128,6 +128,9 @@ export function AppSidebar({
     }
   }, [activeModule, pathname]);
 
+  // 模块门户为全宽，不显示侧栏（放在所有 hooks 之后，避免破坏 hooks 顺序）
+  if (pathname === "/hub") return null;
+
   return (
     <aside
       className={cn(

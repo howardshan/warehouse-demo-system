@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
+import { useI18n } from "@/components/i18n/provider";
 
 type LocationOption = { id: string; code: string; type: string };
 type FamilyOption = {
@@ -65,6 +66,7 @@ export function ProductForm({
   families: FamilyOption[];
   initial?: ProductFormValues;
 }) {
+  const { t } = useI18n();
   const router = useRouter();
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -101,12 +103,14 @@ export function ProductForm({
       <CardHeader>
         <h2 className="text-lg font-semibold">
           {mode === "create"
-            ? "新建商品 / 包装 SKU"
-            : `编辑商品 ${initial?.sku ?? ""}`}
+            ? t("pg.masterData.products.form.newTitle")
+            : t("pg.masterData.products.form.editTitle").replace(
+                "{sku}",
+                initial?.sku ?? "",
+              )}
         </h2>
         <p className="text-sm text-stone-500">
-          采购包装与销售包装分开建。须归属原产品，并填写相对采购单位的转换比（如 1
-          case = 4 bag；采购箱本身填 1）。
+          {t("pg.masterData.products.form.intro")}
         </p>
       </CardHeader>
       <CardBody>
@@ -124,11 +128,11 @@ export function ProductForm({
             const isSellable = role === "sell";
             const packQty = Number(fd.get("pack_contains_qty"));
             if (!familyId) {
-              setError("必须归属原产品");
+              setError(t("pg.masterData.products.form.errFamily"));
               return;
             }
             if (!Number.isFinite(packQty) || packQty <= 0) {
-              setError("转换比必须大于 0");
+              setError(t("pg.masterData.products.form.errConversion"));
               return;
             }
             start(async () => {
@@ -197,28 +201,36 @@ export function ProductForm({
             )}
           </div>
           <div>
-            <Label required>销售产品名称</Label>
+            <Label required>
+              {t("pg.masterData.products.form.saleNameLabel")}
+            </Label>
             <Input
               name="name"
-              placeholder="大蒜(包)"
+              placeholder={t("pg.masterData.products.form.saleNamePlaceholder")}
               defaultValue={initial?.name}
               required
             />
           </div>
           <div>
-            <Label required>状态</Label>
+            <Label required>{t("pg.masterData.common.status")}</Label>
             <Select
               name="status"
               defaultValue={
                 initial?.is_active === false ? "off_shelf" : "on_shelf"
               }
             >
-              <option value="on_shelf">上架</option>
-              <option value="off_shelf">下架</option>
+              <option value="on_shelf">
+                {t("pg.masterData.common.onShelf")}
+              </option>
+              <option value="off_shelf">
+                {t("pg.masterData.common.offShelf")}
+              </option>
             </Select>
           </div>
           <div>
-            <Label required>包装用途</Label>
+            <Label required>
+              {t("pg.masterData.products.form.packUsageLabel")}
+            </Label>
             <Select
               value={role}
               onChange={(e) => {
@@ -227,15 +239,21 @@ export function ProductForm({
                 if (next === "purchase") setRequiresDebox(false);
               }}
             >
-              <option value="purchase">仅采购包装</option>
-              <option value="sell">仅销售包装</option>
+              <option value="purchase">
+                {t("pg.masterData.products.form.purchaseOnly")}
+              </option>
+              <option value="sell">
+                {t("pg.masterData.products.form.sellOnly")}
+              </option>
             </Select>
             <p className="mt-1 text-xs text-stone-500">
-              采购与销售分开建 SKU，不再使用「采购且销售」
+              {t("pg.masterData.products.form.packUsageHint")}
             </p>
           </div>
           <div>
-            <Label required>归属原产品</Label>
+            <Label required>
+              {t("pg.masterData.products.form.familyLabel")}
+            </Label>
             <Select
               name="family_id"
               value={familyId}
@@ -247,21 +265,29 @@ export function ProductForm({
               }}
               required
             >
-              <option value="">请选择原产品</option>
+              <option value="">
+                {t("pg.masterData.products.form.selectFamily")}
+              </option>
               {families.map((f) => (
                 <option key={f.id} value={f.id}>
                   {f.name} ({f.code})
                   {f.supplier_name ? ` · ${f.supplier_name}` : ""}
-                  {f.purchase_uom ? ` · 采购单位 ${f.purchase_uom}` : ""}
+                  {f.purchase_uom
+                    ? ` · ${t(
+                        "pg.masterData.products.form.purchaseUomOption",
+                      ).replace("{uom}", f.purchase_uom)}`
+                    : ""}
                 </option>
               ))}
             </Select>
             <p className="mt-1 text-xs text-stone-500">
-              请先在采购模块「原产品」页建好原产品及其采购单位
+              {t("pg.masterData.products.form.familyHint")}
             </p>
           </div>
           <div>
-            <Label required>本包装单位</Label>
+            <Label required>
+              {t("pg.masterData.products.form.packUomLabel")}
+            </Label>
             <Select
               value={orderingUom}
               onChange={(e) => setOrderingUom(e.target.value)}
@@ -276,11 +302,13 @@ export function ProductForm({
           </div>
 
           <div className="md:col-span-2 rounded-md border border-teal-200 bg-teal-50/60 p-4">
-            <Label required>采购 ↔ 本包装 转换比</Label>
+            <Label required>
+              {t("pg.masterData.products.form.conversionLabel")}
+            </Label>
             <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
               <span className="font-medium">1</span>
               <span className="rounded bg-white px-2 py-1 font-mono text-xs">
-                {purchaseUom || "采购单位"}
+                {purchaseUom || t("pg.masterData.common.purchaseUomFallback")}
               </span>
               <span className="font-medium">=</span>
               <Input
@@ -299,8 +327,7 @@ export function ProductForm({
               </span>
             </div>
             <p className="mt-2 text-xs text-teal-900">
-              必填。例：采购箱本身填 1（1 case = 1 case）；按包销售填 4（1 case =
-              4 bag）。
+              {t("pg.masterData.products.form.conversionHint")}
             </p>
           </div>
 
@@ -316,16 +343,17 @@ export function ProductForm({
                 />
                 <div>
                   <Label htmlFor="requires_debox" className="mb-0">
-                    散卖需去盒
+                    {t("pg.masterData.products.form.deboxLabel")}
                   </Label>
                   <p className="mt-1 text-xs text-stone-500">
-                    采购有外盒、零售散卖无盒时勾选。库存按净重 = 毛重 −
-                    采购件数 × 原产品外包装重量。整箱卖请勿勾选。
+                    {t("pg.masterData.products.form.deboxHint")}
                     {familyTare != null && familyTare > 0
-                      ? ` 当前原产品皮重 ${familyTare} lb。`
+                      ? ` ${t(
+                          "pg.masterData.products.form.deboxTareHint",
+                        ).replace("{tare}", String(familyTare))}`
                       : familyId
-                        ? " 当前原产品未填外包装重量，勾选后仍不会扣减，请先在原产品页补填。"
-                        : " 请先归属原产品并填写外包装重量。"}
+                        ? ` ${t("pg.masterData.products.form.deboxNoTareHint")}`
+                        : ` ${t("pg.masterData.products.form.deboxSelectFamilyHint")}`}
                   </p>
                 </div>
               </div>
@@ -333,7 +361,7 @@ export function ProductForm({
           )}
 
           <div>
-            <Label>温区</Label>
+            <Label>{t("pg.masterData.common.tempZone")}</Label>
             <Select
               name="temp_zone"
               defaultValue={initial?.temp_zone ?? "ambient"}
@@ -346,7 +374,7 @@ export function ProductForm({
             </Select>
           </div>
           <div>
-            <Label>单价（售价）</Label>
+            <Label>{t("pg.masterData.products.form.priceLabel")}</Label>
             <Input
               name="current_price"
               type="number"
@@ -365,16 +393,16 @@ export function ProductForm({
               onChange={(e) => setIsCatch(e.target.checked)}
             />
             <Label htmlFor="is_catch_weight" className="mb-0">
-              称重品 — 计价按 lb
+              {t("pg.masterData.products.form.catchWeightLabel")}
               {familyCatch != null && (
                 <span className="ml-2 text-xs font-normal text-stone-500">
-                  （跟随原产品「需要称重」设置）
+                  {t("pg.masterData.products.form.catchWeightFollowHint")}
                 </span>
               )}
             </Label>
           </div>
           <div>
-            <Label>计价单位</Label>
+            <Label>{t("pg.masterData.products.form.pricingUomLabel")}</Label>
             {effectiveCatch ? (
               <Input name="pricing_uom" value="lb" readOnly />
             ) : (
@@ -393,7 +421,7 @@ export function ProductForm({
           </div>
           {effectiveCatch && (
             <div>
-              <Label>均重 lb（仅预估）</Label>
+              <Label>{t("pg.masterData.products.form.avgWeightLabel")}</Label>
               <Input
                 name="avg_weight_lb"
                 type="number"
@@ -405,7 +433,7 @@ export function ProductForm({
             </div>
           )}
           <div>
-            <Label>验收方式</Label>
+            <Label>{t("pg.masterData.products.form.inspectionLabel")}</Label>
             <Select
               name="inspection_method"
               defaultValue={initial?.inspection_method ?? "skip"}
@@ -418,7 +446,7 @@ export function ProductForm({
             </Select>
           </div>
           <div>
-            <Label>固定拣货位</Label>
+            <Label>{t("pg.masterData.products.form.fixedPickLabel")}</Label>
             <Select
               name="fixed_pick_location_id"
               defaultValue={initial?.fixed_pick_location_id ?? ""}
@@ -432,7 +460,7 @@ export function ProductForm({
             </Select>
           </div>
           <div>
-            <Label>保质期(天)</Label>
+            <Label>{t("pg.masterData.products.form.shelfLifeLabel")}</Label>
             <Input
               name="shelf_life_days"
               type="number"
@@ -446,10 +474,10 @@ export function ProductForm({
           <div className="md:col-span-2 flex flex-wrap gap-3">
             <Button type="submit" disabled={pending}>
               {pending
-                ? "保存中…"
+                ? t("pg.masterData.common.saving")
                 : mode === "create"
-                  ? "创建商品"
-                  : "保存修改"}
+                  ? t("pg.masterData.products.form.createBtn")
+                  : t("pg.masterData.products.form.saveBtn")}
             </Button>
             {mode === "edit" && (
               <Button
@@ -458,7 +486,7 @@ export function ProductForm({
                 disabled={pending}
                 onClick={() => router.push("/master-data/products")}
               >
-                返回列表
+                {t("pg.masterData.products.form.backBtn")}
               </Button>
             )}
           </div>

@@ -28,3 +28,20 @@ h2,
 h3 {
   font-family: var(--font-display), "IBM Plex Sans", sans-serif;
 }
+
+/* 打印对账单：仅显示 .print-area，隐藏侧栏/页头等 */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .print-area,
+  .print-area * {
+    visibility: visible;
+  }
+  .print-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+}

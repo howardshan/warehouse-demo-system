@@ -2,7 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getRequestLocale } from "@/app/actions/i18n";
 import { Badge } from "@/components/ui/badge";
-import { getDictionary } from "@/lib/i18n/dictionaries";
+import { getDictionary, t } from "@/lib/i18n/dictionaries";
 import { statusLabel } from "@/lib/i18n/status";
 import { StartReceivingForm } from "../purchasing-forms";
 
@@ -27,10 +27,9 @@ export default async function ReceivingPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold">采购收货</h1>
+        <h1 className="text-2xl font-semibold">{t(messages, "pg.receiving.title")}</h1>
         <p className="mt-1 text-sm text-stone-500">
-          流程：现场盲收 → Shipping List → Invoice →
-          单据核对。各方数量分页录入、互不可见，仅在核对页汇合。
+          {t(messages, "pg.receiving.intro")}
         </p>
       </div>
       <StartReceivingForm
@@ -48,14 +47,14 @@ export default async function ReceivingPage() {
         <table className="w-full text-left text-sm">
           <thead className="bg-stone-50 text-stone-500">
             <tr>
-              <th className="px-4 py-3">收货单</th>
-              <th className="px-4 py-3">采购单</th>
-              <th className="px-4 py-3">供应商</th>
-              <th className="px-4 py-3">Shipping List</th>
-              <th className="px-4 py-3">Invoice</th>
-              <th className="px-4 py-3">收货时间</th>
-              <th className="px-4 py-3">状态</th>
-              <th className="px-4 py-3">操作</th>
+              <th className="px-4 py-3">{t(messages, "pg.receiving.thGr")}</th>
+              <th className="px-4 py-3">{t(messages, "pg.receiving.poLabel")}</th>
+              <th className="px-4 py-3">{t(messages, "pg.receiving.thSupplier")}</th>
+              <th className="px-4 py-3">{t(messages, "pg.receiving.stepShippingList")}</th>
+              <th className="px-4 py-3">{t(messages, "pg.receiving.stepInvoice")}</th>
+              <th className="px-4 py-3">{t(messages, "pg.receiving.thReceivedAt")}</th>
+              <th className="px-4 py-3">{t(messages, "pg.receiving.thStatus")}</th>
+              <th className="px-4 py-3">{t(messages, "pg.receiving.thActions")}</th>
             </tr>
           </thead>
           <tbody>
@@ -101,25 +100,25 @@ export default async function ReceivingPage() {
                         href={`/purchasing/receiving/${receipt.id}`}
                         className="font-medium text-teal-800 hover:underline"
                       >
-                        盲收
+                        {t(messages, "pg.receiving.linkBlind")}
                       </Link>
                       <Link
                         href={`/purchasing/receiving/${receipt.id}/delivery-note`}
                         className="font-medium text-teal-800 hover:underline"
                       >
-                        Shipping List
+                        {t(messages, "pg.receiving.stepShippingList")}
                       </Link>
                       <Link
                         href={`/purchasing/receiving/${receipt.id}/invoice`}
                         className="font-medium text-teal-800 hover:underline"
                       >
-                        Invoice
+                        {t(messages, "pg.receiving.stepInvoice")}
                       </Link>
                       <Link
                         href={`/purchasing/receiving/${receipt.id}/match`}
                         className="font-medium text-teal-800 hover:underline"
                       >
-                        核对
+                        {t(messages, "pg.receiving.linkMatch")}
                       </Link>
                     </div>
                   </td>
@@ -132,7 +131,7 @@ export default async function ReceivingPage() {
                   colSpan={8}
                   className="px-4 py-8 text-center text-stone-400"
                 >
-                  暂无收货单
+                  {t(messages, "pg.receiving.empty")}
                 </td>
               </tr>
             )}

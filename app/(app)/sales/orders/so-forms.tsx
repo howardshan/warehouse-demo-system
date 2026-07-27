@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   addSoLine,
@@ -11,7 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
+import { useI18n } from "@/components/i18n/provider";
 import { formatMoney } from "@/lib/utils";
 
 type ProductOpt = {
@@ -30,12 +30,65 @@ export function AddSoLineForm({
   salesOrderId: string;
   products: ProductOpt[];
 }) {
+  const { t } = useI18n();
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [productId, setProductId] = useState("");
   const [qtyUnits, setQtyUnits] = useState("");
+  const [skuInput, setSkuInput] = useState("");
+  const [search, setSearch] = useState("");
+  const [open, setOpen] = useState(false);
+  const comboRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const selected = products.find((p) => p.id === productId);
+
+  const optionLabel = (p: ProductOpt) =>
+    `${p.sku} · ${p.name} · ${formatMoney(Number(p.current_price))}`;
+
+  // SKU 输入框与商品搜索框共同过滤同一份商品列表
+  const filtered = useMemo(() => {
+    const sku = skuInput.trim().toLowerCase();
+    const tokens = search.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    return products.filter((p) => {
+      if (sku && !p.sku.toLowerCase().includes(sku)) return false;
+      if (tokens.length) {
+        const hay = `${p.sku} ${p.name}`.toLowerCase();
+        if (!tokens.every((tk) => hay.includes(tk))) return false;
+      }
+      return true;
+    });
+  }, [products, skuInput, search]);
+
+  function selectProduct(p: ProductOpt) {
+    setProductId(p.id);
+    setSkuInput(p.sku);
+    setSearch(optionLabel(p));
+    setOpen(false);
+    setError(null);
+  }
+
+  function clearSelection() {
+    setProductId("");
+  }
+
+  // 点击外部关闭下拉
+  useEffect(() => {
+    if (!open) return;
+    function onDocClick(e: MouseEvent) {
+      if (comboRef.current && !comboRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, [open]);
+
+  function resetPicker() {
+    setProductId("");
+    setSkuInput("");
+    setSearch("");
+    setOpen(false);
+  }
 
   const atpHint = useMemo(() => {
     if (!selected) return null;
@@ -44,20 +97,22 @@ export function AddSoLineForm({
     if (atp <= 0) {
       return {
         tone: "danger" as const,
-        text: "当前无可用库存（ATP 0），请先入库后再下单。",
+        text: t("pg.sales.orders.atpNone"),
       };
     }
     if (Number.isFinite(qty) && qty > 0 && qty > atp) {
       return {
         tone: "warn" as const,
-        text: `件数 ${qty} 超过可用库存 ATP ${atp} 件，无法添加。`,
+        text: t("pg.sales.orders.atpExceed")
+          .replace("{qty}", String(qty))
+          .replace("{atp}", String(atp)),
       };
     }
     return {
       tone: "ok" as const,
-      text: `现有可用库存（ATP）：${atp} 件`,
+      text: t("pg.sales.orders.atpAvail").replace("{atp}", String(atp)),
     };
-  }, [selected, qtyUnits]);
+  }, [selected, qtyUnits, t]);
 
   const blocked =
     !!selected &&
@@ -66,7 +121,7 @@ export function AddSoLineForm({
 
   return (
     <form
-      className="grid gap-3 md:grid-cols-5"
+      className="grid gap-3 md:grid-cols-6"
       onSubmit={(e) => {
         e.preventDefault();
         if (blocked) return;
@@ -76,35 +131,81 @@ export function AddSoLineForm({
           try {
             await addSoLine(salesOrderId, fd);
             e.currentTarget.reset();
-            setProductId("");
+            resetPicker();
             setQtyUnits("");
             router.refresh();
           } catch (err) {
-            setError(err instanceof Error ? err.message : "添加失败");
+            setError(err instanceof Error ? err.message : t("pg.sales.orders.addFailed"));
           }
         });
       }}
     >
-      <div className="md:col-span-2">
-        <Label>商品</Label>
-        <Select
-          name="product_id"
-          required
-          value={productId}
+      <input type="hidden" name="product_id" value={productId} />
+      <div>
+        <Label>SKU</Label>
+        <Input
+          value={skuInput}
+          placeholder={t("pg.sales.orders.skuPlaceholder")}
+          autoComplete="off"
           onChange={(e) => {
-            setProductId(e.target.value);
+            const v = e.target.value;
+            setSkuInput(v);
+            setOpen(true);
             setError(null);
+            // 精确匹配某个 SKU 时直接选中
+            const exact = products.find(
+              (p) => p.sku.toLowerCase() === v.trim().toLowerCase(),
+            );
+            if (exact) {
+              setProductId(exact.id);
+              setSearch(optionLabel(exact));
+            } else {
+              clearSelection();
+            }
           }}
-        >
-          <option value="" disabled>
-            请选择商品
-          </option>
-          {products.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.sku} · {p.name} · {formatMoney(Number(p.current_price))}
-            </option>
-          ))}
-        </Select>
+          onFocus={() => setOpen(true)}
+        />
+      </div>
+      <div className="relative md:col-span-2" ref={comboRef}>
+        <Label>{t("pg.sales.common.product")}</Label>
+        <Input
+          value={search}
+          placeholder={t("pg.sales.orders.productSearchPlaceholder")}
+          autoComplete="off"
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setOpen(true);
+            setError(null);
+            clearSelection();
+          }}
+          onFocus={() => setOpen(true)}
+        />
+        {open && (
+          <div className="absolute z-20 mt-1 max-h-64 w-full overflow-auto rounded-md border border-stone-200 bg-white shadow-lg">
+            {filtered.length === 0 ? (
+              <div className="px-3 py-2 text-sm text-stone-400">{t("pg.sales.orders.noMatch")}</div>
+            ) : (
+              filtered.slice(0, 50).map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => selectProduct(p)}
+                  className={
+                    "flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm hover:bg-teal-50 " +
+                    (p.id === productId ? "bg-teal-50" : "")
+                  }
+                >
+                  <span className="min-w-0 truncate text-stone-900">
+                    <span className="font-medium">{p.sku}</span> · {p.name}
+                  </span>
+                  <span className="shrink-0 text-xs text-stone-400">
+                    {formatMoney(Number(p.current_price))} · ATP {p.atp_units}
+                  </span>
+                </button>
+              ))
+            )}
+          </div>
+        )}
         {atpHint && (
           <div
             className={
@@ -121,7 +222,7 @@ export function AddSoLineForm({
         )}
       </div>
       <div>
-        <Label>件数</Label>
+        <Label>{t("pg.sales.common.qty")}</Label>
         <Input
           name="qty_units"
           type="number"
@@ -136,27 +237,27 @@ export function AddSoLineForm({
         />
       </div>
       <div>
-        <Label>预估重量(lb)</Label>
+        <Label>{t("pg.sales.orders.estWeightLb")}</Label>
         <Input name="estimated_weight_lb" type="number" min="0" step="0.01" />
       </div>
       <div>
-        <Label>单价</Label>
+        <Label>{t("pg.sales.common.unitPrice")}</Label>
         <Input
           name="unit_price"
           type="number"
           min="0"
           step="0.01"
-          placeholder="默认取主档现价"
+          placeholder={t("pg.sales.orders.pricePlaceholder")}
         />
       </div>
-      <div className="md:col-span-5 space-y-2">
+      <div className="md:col-span-6 space-y-2">
         {error && (
           <p className="whitespace-pre-wrap text-sm text-red-700" role="alert">
             {error}
           </p>
         )}
         <Button type="submit" disabled={pending || blocked || !productId}>
-          {pending ? "添加中…" : "添加商品行"}
+          {pending ? t("pg.sales.orders.adding") : t("pg.sales.orders.addLine")}
         </Button>
       </div>
     </form>
@@ -164,6 +265,7 @@ export function AddSoLineForm({
 }
 
 export function ConfirmSoButton({ salesOrderId }: { salesOrderId: string }) {
+  const { t } = useI18n();
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
@@ -180,12 +282,12 @@ export function ConfirmSoButton({ salesOrderId }: { salesOrderId: string }) {
               await confirmSalesOrder(salesOrderId);
               router.refresh();
             } catch (err) {
-              setError(err instanceof Error ? err.message : "提交失败");
+              setError(err instanceof Error ? err.message : t("pg.sales.orders.submitFailed"));
             }
           });
         }}
       >
-        {pending ? "检查库存中…" : "确认并执行三重校验"}
+        {pending ? t("pg.sales.orders.checkingStock") : t("pg.sales.orders.confirmValidate")}
       </Button>
       {error && (
         <p className="whitespace-pre-wrap text-sm text-red-700" role="alert">
@@ -217,6 +319,7 @@ export function SoLineEditor({
   salesOrderId: string;
   marginPct: number;
 }) {
+  const { t } = useI18n();
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
@@ -235,7 +338,7 @@ export function SoLineEditor({
             await updateSoLine(line.id, salesOrderId, fd);
             router.refresh();
           } catch (err) {
-            setError(err instanceof Error ? err.message : "保存失败");
+            setError(err instanceof Error ? err.message : t("pg.sales.orders.saveFailed"));
           }
         });
       }}
@@ -245,15 +348,17 @@ export function SoLineEditor({
           {product?.sku} · {product?.name}
         </div>
         <div className="text-xs text-stone-500">
-          成本快照 {formatMoney(Number(line.cost_snapshot))} · 毛利{" "}
-          {marginPct.toFixed(1)}% · 已分配 {line.allocated_units}
+          {t("pg.sales.orders.lineMeta")
+            .replace("{cost}", formatMoney(Number(line.cost_snapshot)))
+            .replace("{margin}", marginPct.toFixed(1))
+            .replace("{allocated}", String(line.allocated_units))}
         </div>
         {error && (
           <p className="mt-1 whitespace-pre-wrap text-xs text-red-700">{error}</p>
         )}
       </div>
       <div>
-        <Label>件数</Label>
+        <Label>{t("pg.sales.common.qty")}</Label>
         <Input
           name="qty_units"
           type="number"
@@ -263,7 +368,7 @@ export function SoLineEditor({
         />
       </div>
       <div>
-        <Label>预估 lb</Label>
+        <Label>{t("pg.sales.orders.estLb")}</Label>
         <Input
           name="estimated_weight_lb"
           type="number"
@@ -273,7 +378,7 @@ export function SoLineEditor({
         />
       </div>
       <div>
-        <Label>单价</Label>
+        <Label>{t("pg.sales.common.unitPrice")}</Label>
         <Input
           name="unit_price"
           type="number"
@@ -283,7 +388,7 @@ export function SoLineEditor({
         />
       </div>
       <div>
-        <Label>备注</Label>
+        <Label>{t("pg.sales.common.notes")}</Label>
         <Input
           name="notes"
           defaultValue={line.notes ?? ""}
@@ -294,7 +399,7 @@ export function SoLineEditor({
         {unlocked && (
           <>
             <Button size="sm" type="submit" disabled={pending}>
-              保存
+              {t("pg.sales.common.save")}
             </Button>
             <Button
               size="sm"
@@ -307,12 +412,12 @@ export function SoLineEditor({
                     await deleteSoLine(line.id, salesOrderId);
                     router.refresh();
                   } catch (err) {
-                    setError(err instanceof Error ? err.message : "删除失败");
+                    setError(err instanceof Error ? err.message : t("pg.sales.orders.deleteFailed"));
                   }
                 })
               }
             >
-              删除
+              {t("pg.sales.common.delete")}
             </Button>
           </>
         )}

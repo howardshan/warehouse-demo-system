@@ -21,6 +21,7 @@ import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
+import { useI18n } from "@/components/i18n/provider";
 
 type Option = { id: string; label: string };
 
@@ -29,13 +30,14 @@ function FormMessage({ error }: { error: string | null }) {
 }
 
 export function PoCreateForm({ suppliers }: { suppliers: Option[] }) {
+  const { t } = useI18n();
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
   return (
     <Card>
-      <CardHeader><h2 className="text-lg font-semibold">新建采购订单</h2></CardHeader>
+      <CardHeader><h2 className="text-lg font-semibold">{t("pg.purchasing.newPurchaseOrder")}</h2></CardHeader>
       <CardBody>
         <form
           className="grid gap-4 md:grid-cols-5"
@@ -56,12 +58,12 @@ export function PoCreateForm({ suppliers }: { suppliers: Option[] }) {
             });
           }}
         >
-          <div><Label>供应商</Label><Select name="supplier_id" required><option value="">请选择</option>{suppliers.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}</Select></div>
-          <div><Label>订单日期</Label><Input name="order_date" type="date" defaultValue={new Date().toISOString().slice(0, 10)} required /></div>
-          <div><Label>预计到货日</Label><Input name="expected_date" type="date" /></div>
-          <div><Label>币种</Label><Input name="currency_code" defaultValue="USD" maxLength={3} required /></div>
-          <div><Label>备注</Label><Input name="notes" /></div>
-          <div className="md:col-span-5 space-y-2"><FormMessage error={error} /><Button type="submit" disabled={pending}>{pending ? "创建中…" : "创建采购单"}</Button></div>
+          <div><Label>{t("pg.purchasing.supplier")}</Label><Select name="supplier_id" required><option value="">{t("pg.purchasing.selectPlaceholder")}</option>{suppliers.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}</Select></div>
+          <div><Label>{t("pg.purchasing.orderDateLabel")}</Label><Input name="order_date" type="date" defaultValue={new Date().toISOString().slice(0, 10)} required /></div>
+          <div><Label>{t("pg.purchasing.expectedDateLabel")}</Label><Input name="expected_date" type="date" /></div>
+          <div><Label>{t("pg.purchasing.currency")}</Label><Input name="currency_code" defaultValue="USD" maxLength={3} required /></div>
+          <div><Label>{t("pg.purchasing.notes")}</Label><Input name="notes" /></div>
+          <div className="md:col-span-5 space-y-2"><FormMessage error={error} /><Button type="submit" disabled={pending}>{pending ? t("pg.purchasing.creating") : t("pg.purchasing.createPo")}</Button></div>
         </form>
       </CardBody>
     </Card>
@@ -89,6 +91,7 @@ export function PoLineForm({
     family_purchase_uom: string | null;
   }[];
 }) {
+  const { t } = useI18n();
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [productId, setProductId] = useState("");
@@ -115,7 +118,7 @@ export function PoLineForm({
       onSubmit={(event) => {
         event.preventDefault();
         if (!selected) {
-          setError("请选择采购商品");
+          setError(t("pg.purchasing.selectProduct"));
           return;
         }
         const form = event.currentTarget;
@@ -138,13 +141,13 @@ export function PoLineForm({
       }}
     >
       <div className="md:col-span-2">
-        <Label>采购商品</Label>
+        <Label>{t("pg.purchasing.purchaseProduct")}</Label>
         <Select
           value={productId}
           onChange={(e) => setProductId(e.target.value)}
           required
         >
-          <option value="">请选择（按采购单位）</option>
+          <option value="">{t("pg.purchasing.selectByOrderingUom")}</option>
           {purchaseProducts.map((p) => (
             <option key={p.id} value={p.id}>
               {(p.family_name ?? p.name) +
@@ -155,30 +158,30 @@ export function PoLineForm({
         </Select>
         {selected && (
           <p className="mt-1 text-xs text-stone-500">
-            采购单位：{selected.ordering_uom}
+            {t("pg.purchasing.orderingUnitPrefix")}{selected.ordering_uom}
             {selected.family_purchase_uom
-              ? `（原产品约定 ${selected.family_purchase_uom}）`
+              ? t("pg.purchasing.familyAgreedUom").replace("{x}", selected.family_purchase_uom)
               : ""}
-            。销售拆包转换请在商品主数据维护，不在此选择。
+            {t("pg.purchasing.sellPackConversionHint")}
           </p>
         )}
       </div>
       <div>
-        <Label>数量（{selected?.ordering_uom || "采购单位"}）</Label>
+        <Label>{t("pg.purchasing.qtyLabel").replace("{x}", selected?.ordering_uom || t("pg.purchasing.purchaseUom"))}</Label>
         <Input name="qty_units" type="number" min="0.001" step="0.001" required />
       </div>
       <div>
-        <Label>预计重量（lb）</Label>
+        <Label>{t("pg.purchasing.estimatedWeightLbLabel")}</Label>
         <Input
           name="estimated_weight_lb"
           type="number"
           min="0"
           step="0.001"
-          placeholder={selected?.is_catch_weight ? "称重品建议填写" : "可选"}
+          placeholder={selected?.is_catch_weight ? t("pg.purchasing.catchWeightSuggest") : t("pg.purchasing.optional")}
         />
       </div>
       <div>
-        <Label>单价</Label>
+        <Label>{t("pg.purchasing.unitPrice")}</Label>
         <Input
           name="unit_cost"
           type="number"
@@ -193,7 +196,7 @@ export function PoLineForm({
       <div className="md:col-span-5 space-y-2">
         <FormMessage error={error} />
         <Button type="submit" disabled={pending || !selected}>
-          {pending ? "添加中…" : "添加明细"}
+          {pending ? t("pg.purchasing.addingLine") : t("pg.purchasing.addLine")}
         </Button>
       </div>
     </form>
@@ -201,19 +204,21 @@ export function PoLineForm({
 }
 
 export function IssuePoButton({ poId }: { poId: string }) {
+  const { t } = useI18n();
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
-  return <div className="space-y-2"><Button disabled={pending} onClick={() => start(async () => { const result = await issuePO(poId); if (!result.ok) setError(result.error); else router.refresh(); })}>{pending ? "签发中…" : "签发采购单"}</Button><FormMessage error={error} /></div>;
+  return <div className="space-y-2"><Button disabled={pending} onClick={() => start(async () => { const result = await issuePO(poId); if (!result.ok) setError(result.error); else router.refresh(); })}>{pending ? t("pg.purchasing.issuingPo") : t("pg.purchasing.issuePo")}</Button><FormMessage error={error} /></div>;
 }
 
 export function StartReceivingForm({ purchaseOrders }: { purchaseOrders: Option[] }) {
+  const { t } = useI18n();
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   return (
-    <Card><CardHeader><h2 className="text-lg font-semibold">开始收货</h2>
-      <p className="text-sm text-stone-500">创建        创建后分别录入：现场盲收 → Shipping List → Invoice → 单据核对（互不可见对方数量）。
+    <Card><CardHeader><h2 className="text-lg font-semibold">{t("pg.purchasing.startReceiving")}</h2>
+      <p className="text-sm text-stone-500">{t("pg.purchasing.startReceivingDesc")}
       </p>
     </CardHeader><CardBody>
       <form className="grid gap-4 md:grid-cols-3" onSubmit={(event) => {
@@ -224,9 +229,9 @@ export function StartReceivingForm({ purchaseOrders }: { purchaseOrders: Option[
           if (!result.ok) setError(result.error); else router.push(`/purchasing/receiving/${result.id}`);
         });
       }}>
-        <div><Label>已签发采购单</Label><Select name="purchase_order_id" required><option value="">请选择</option>{purchaseOrders.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}</Select></div>
-        <div><Label>Shipping List 号（选填，可后补）</Label><Input name="supplier_document_no" placeholder="送货单号" /></div>
-        <div className="flex items-end"><Button type="submit" disabled={pending}>{pending ? "创建中…" : "开始收货"}</Button></div>
+        <div><Label>{t("pg.purchasing.issuedPo")}</Label><Select name="purchase_order_id" required><option value="">{t("pg.purchasing.selectPlaceholder")}</option>{purchaseOrders.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}</Select></div>
+        <div><Label>{t("pg.purchasing.shippingListNoOptional")}</Label><Input name="supplier_document_no" placeholder={t("pg.purchasing.deliveryNoPlaceholder")} /></div>
+        <div className="flex items-end"><Button type="submit" disabled={pending}>{pending ? t("pg.purchasing.creating") : t("pg.purchasing.startReceiving")}</Button></div>
         <div className="md:col-span-3"><FormMessage error={error} /></div>
       </form>
     </CardBody></Card>
@@ -287,6 +292,7 @@ export function BlindReceivingForm({
   lines: BlindGrLine[];
   status: string;
 }) {
+  const { t } = useI18n();
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
@@ -333,7 +339,7 @@ export function BlindReceivingForm({
           </CardHeader>
           <CardBody className="grid gap-4 md:grid-cols-4">
             <div>
-              <Label required>实际件数</Label>
+              <Label required>{t("pg.purchasing.actualUnits")}</Label>
               <Input
                 name={`actual_${index}`}
                 type="number"
@@ -346,7 +352,7 @@ export function BlindReceivingForm({
             </div>
             {line.is_catch_weight ? (
               <div>
-                <Label required>实际重量（lb）</Label>
+                <Label required>{t("pg.purchasing.actualWeightLb")}</Label>
                 <Input
                   name={`weight_${index}`}
                   type="number"
@@ -361,12 +367,12 @@ export function BlindReceivingForm({
               </div>
             ) : (
               <div>
-                <Label>实际重量</Label>
-                <p className="mt-2 text-sm text-stone-400">非称重品，无需填写</p>
+                <Label>{t("pg.purchasing.actualWeight")}</Label>
+                <p className="mt-2 text-sm text-stone-400">{t("pg.purchasing.nonCatchWeightNote")}</p>
               </div>
             )}
             <div>
-              <Label required>供应商批号 / LOT</Label>
+              <Label required>{t("pg.purchasing.supplierLotNo")}</Label>
               <Input
                 name={`lot_${index}`}
                 defaultValue={line.lot_no === "__PENDING__" ? "" : line.lot_no}
@@ -375,7 +381,7 @@ export function BlindReceivingForm({
               />
             </div>
             <div>
-              <Label>效期（选填）</Label>
+              <Label>{t("pg.purchasing.expiryOptional")}</Label>
               <Input
                 name={`expiry_${index}`}
                 type="date"
@@ -384,7 +390,7 @@ export function BlindReceivingForm({
               />
             </div>
             <div className="md:col-span-4">
-              <Label>备注（选填）</Label>
+              <Label>{t("pg.purchasing.notesOptional")}</Label>
               <Input
                 name={`notes_${index}`}
                 defaultValue={line.notes || ""}
@@ -397,7 +403,7 @@ export function BlindReceivingForm({
       <FormMessage error={error} />
       {editable && (
         <Button type="submit" disabled={pending}>
-          {pending ? "保存中…" : "保存盲收结果"}
+          {pending ? t("pg.purchasing.saving") : t("pg.purchasing.saveBlind")}
         </Button>
       )}
     </form>
@@ -416,6 +422,7 @@ export function SupplierDeliveryNoteForm({
   status: string;
   supplierDocumentNo: string | null;
 }) {
+  const { t } = useI18n();
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
@@ -444,17 +451,17 @@ export function SupplierDeliveryNoteForm({
     <form onSubmit={handleSave} className="space-y-4">
       <Card>
         <CardHeader>
-          <h3 className="font-semibold">单据号</h3>
+          <h3 className="font-semibold">{t("pg.purchasing.documentNo")}</h3>
         </CardHeader>
         <CardBody>
           <div className="max-w-md">
-            <Label required>Shipping List 号（送货单号）</Label>
+            <Label required>{t("pg.purchasing.shippingListNo")}</Label>
             <Input
               name="supplier_document_no"
               defaultValue={supplierDocumentNo ?? ""}
               disabled={!editable}
               required
-              placeholder="供应商送货单 / packing list 号"
+              placeholder={t("pg.purchasing.shippingListPlaceholder")}
             />
           </div>
         </CardBody>
@@ -471,7 +478,7 @@ export function SupplierDeliveryNoteForm({
           </CardHeader>
           <CardBody>
             <div className="max-w-xs">
-              <Label required>Shipping List 声称件数</Label>
+              <Label required>{t("pg.purchasing.shippingListClaimedUnits")}</Label>
               <Input
                 name={`claimed_${index}`}
                 type="number"
@@ -492,7 +499,7 @@ export function SupplierDeliveryNoteForm({
       <FormMessage error={error} />
       {editable && (
         <Button type="submit" disabled={pending}>
-          {pending ? "保存中…" : "保存 Shipping List"}
+          {pending ? t("pg.purchasing.saving") : t("pg.purchasing.saveShippingList")}
         </Button>
       )}
     </form>
@@ -511,6 +518,7 @@ export function SupplierInvoiceForm({
   status: string;
   supplierInvoiceNo: string | null;
 }) {
+  const { t } = useI18n();
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
@@ -542,17 +550,17 @@ export function SupplierInvoiceForm({
     <form onSubmit={handleSave} className="space-y-4">
       <Card>
         <CardHeader>
-          <h3 className="font-semibold">单据号</h3>
+          <h3 className="font-semibold">{t("pg.purchasing.documentNo")}</h3>
         </CardHeader>
         <CardBody>
           <div className="max-w-md">
-            <Label required>Invoice 号（发票号）</Label>
+            <Label required>{t("pg.purchasing.invoiceNo")}</Label>
             <Input
               name="supplier_invoice_no"
               defaultValue={supplierInvoiceNo ?? ""}
               disabled={!editable}
               required
-              placeholder="供应商发票号"
+              placeholder={t("pg.purchasing.invoicePlaceholder")}
             />
           </div>
         </CardBody>
@@ -569,7 +577,7 @@ export function SupplierInvoiceForm({
           </CardHeader>
           <CardBody className="grid gap-4 md:grid-cols-2">
             <div className="max-w-xs">
-              <Label required>Invoice 声称件数</Label>
+              <Label required>{t("pg.purchasing.invoiceClaimedUnits")}</Label>
               <Input
                 name={`invoice_${index}`}
                 type="number"
@@ -586,7 +594,7 @@ export function SupplierInvoiceForm({
             </div>
             {line.is_catch_weight && (
               <div className="max-w-xs">
-                <Label required>Invoice 声称重量（lb）</Label>
+                <Label required>{t("pg.purchasing.invoiceClaimedWeightLb")}</Label>
                 <Input
                   name={`invoice_weight_${index}`}
                   type="number"
@@ -609,7 +617,7 @@ export function SupplierInvoiceForm({
       <FormMessage error={error} />
       {editable && (
         <Button type="submit" disabled={pending}>
-          {pending ? "保存中…" : "保存 Invoice"}
+          {pending ? t("pg.purchasing.saving") : t("pg.purchasing.saveInvoice")}
         </Button>
       )}
     </form>
@@ -626,6 +634,7 @@ export function ThreeWayMatchForm({
   lines: MatchLine[];
   status: string;
 }) {
+  const { t } = useI18n();
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
@@ -679,22 +688,22 @@ export function ThreeWayMatchForm({
                   </span>
                   {line.is_catch_weight && (
                     <span className="ml-2 text-xs font-normal text-teal-800">
-                      称重
+                      {t("pg.purchasing.catchWeight")}
                     </span>
                   )}
                 </div>
                 {fourWayMismatch && (
-                  <p className="mt-1 text-xs text-amber-700">单据数量不一致</p>
+                  <p className="mt-1 text-xs text-amber-700">{t("pg.purchasing.documentQtyMismatch")}</p>
                 )}
                 {line.weightWarning && (
                   <p className="mt-1 text-xs text-amber-700">
-                    重量偏差警告：Invoice{" "}
-                    {line.invoice_claimed_weight_lb ?? "—"} lb vs 实收{" "}
+                    {t("pg.purchasing.weightVarianceWarningPrefix")}Invoice{" "}
+                    {line.invoice_claimed_weight_lb ?? "—"} lb vs {t("pg.purchasing.actualReceived")}{" "}
                     {line.actual_weight_lb} lb
                     {line.weightVariancePct != null
-                      ? `（偏差 ${line.weightVariancePct.toFixed(1)}%，超过公司阈值）`
+                      ? t("pg.purchasing.weightVarianceDeviation").replace("{x}", line.weightVariancePct.toFixed(1))
                       : ""}
-                    。不阻断核对，请人工复核。
+                    {t("pg.purchasing.weightVarianceReviewNote")}
                   </p>
                 )}
               </CardHeader>
@@ -707,7 +716,7 @@ export function ThreeWayMatchForm({
                   }
                 >
                   <div>
-                    <div className="text-xs text-stone-500">订购件数</div>
+                    <div className="text-xs text-stone-500">{t("pg.purchasing.orderedUnits")}</div>
                     <div className="mt-1 text-lg font-semibold tabular-nums">
                       {ordered}
                     </div>
@@ -719,20 +728,20 @@ export function ThreeWayMatchForm({
                     </div>
                   </div>
                   <div>
-                    <div className="text-xs text-stone-500">Invoice 件数</div>
+                    <div className="text-xs text-stone-500">{t("pg.purchasing.invoiceUnits")}</div>
                     <div className="mt-1 text-lg font-semibold tabular-nums">
                       {invoice}
                     </div>
                   </div>
                   <div>
-                    <div className="text-xs text-stone-500">现场实收件数</div>
+                    <div className="text-xs text-stone-500">{t("pg.purchasing.actualReceivedUnits")}</div>
                     <div className="mt-1 text-lg font-semibold tabular-nums">
                       {actual}
                     </div>
                   </div>
                   {needsReason && (
                     <div>
-                      <Label required>差异原因</Label>
+                      <Label required>{t("pg.purchasing.varianceReason")}</Label>
                       <Select
                         name={`reason_${index}`}
                         defaultValue={line.variance_reason || ""}
@@ -740,17 +749,17 @@ export function ThreeWayMatchForm({
                         required
                       >
                         <option value="" disabled>
-                          请选择差异原因
+                          {t("pg.purchasing.selectVarianceReason")}
                         </option>
-                        <option value="out_of_stock">缺货</option>
-                        <option value="stock_mismatch">库存不符</option>
-                        <option value="quality_reject">质量拒收</option>
-                        <option value="near_expiry">临期</option>
-                        <option value="underweight">重量不足</option>
-                        <option value="other">其他</option>
+                        <option value="out_of_stock">{t("pg.purchasing.reasonOutOfStock")}</option>
+                        <option value="stock_mismatch">{t("pg.purchasing.reasonStockMismatch")}</option>
+                        <option value="quality_reject">{t("pg.purchasing.reasonQualityReject")}</option>
+                        <option value="near_expiry">{t("pg.purchasing.reasonNearExpiry")}</option>
+                        <option value="underweight">{t("pg.purchasing.reasonUnderweight")}</option>
+                        <option value="other">{t("pg.purchasing.reasonOther")}</option>
                       </Select>
                       <p className="mt-1 text-xs text-stone-500">
-                        实收 / Shipping List / Invoice 不一致时必填
+                        {t("pg.purchasing.varianceReasonRequired")}
                       </p>
                     </div>
                   )}
@@ -759,14 +768,14 @@ export function ThreeWayMatchForm({
                   <div className="grid gap-4 rounded-md border border-stone-100 bg-stone-50/80 p-3 md:grid-cols-2">
                     <div>
                       <div className="text-xs text-stone-500">
-                        Invoice 声称重量
+                        {t("pg.purchasing.invoiceClaimedWeight")}
                       </div>
                       <div className="mt-1 font-semibold tabular-nums">
                         {line.invoice_claimed_weight_lb ?? "—"} lb
                       </div>
                     </div>
                     <div>
-                      <div className="text-xs text-stone-500">现场实收重量</div>
+                      <div className="text-xs text-stone-500">{t("pg.purchasing.actualReceivedWeight")}</div>
                       <div className="mt-1 font-semibold tabular-nums">
                         {line.actual_weight_lb} lb
                       </div>
@@ -780,7 +789,7 @@ export function ThreeWayMatchForm({
         <FormMessage error={error} />
         {editable && (
           <Button type="submit" disabled={pending}>
-            {pending ? "核对中…" : "提交核对"}
+            {pending ? t("pg.purchasing.matching") : t("pg.purchasing.submitMatch")}
           </Button>
         )}
       </form>
@@ -796,7 +805,7 @@ export function ThreeWayMatchForm({
             })
           }
         >
-          {pending ? "过账中…" : "过账入库"}
+          {pending ? t("pg.purchasing.posting") : t("pg.purchasing.postGr")}
         </Button>
       )}
     </div>
@@ -804,6 +813,7 @@ export function ThreeWayMatchForm({
 }
 
 export function AlertActions({ alertId }: { alertId: string }) {
+  const { t } = useI18n();
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
@@ -821,7 +831,7 @@ export function AlertActions({ alertId }: { alertId: string }) {
             })
           }
         >
-          一键调价
+          {t("pg.purchasing.repriceOneClick")}
         </Button>
         <Button
           size="sm"
@@ -835,7 +845,7 @@ export function AlertActions({ alertId }: { alertId: string }) {
             })
           }
         >
-          忽略
+          {t("pg.purchasing.dismiss")}
         </Button>
       </div>
       <FormMessage error={error} />

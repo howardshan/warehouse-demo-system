@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { updateSetting } from "@/app/actions/master-data";
+import { useI18n } from "@/components/i18n/provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,6 +16,7 @@ export function SettingRow({
   value: unknown;
   description: string | null;
 }) {
+  const { t } = useI18n();
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const display =
@@ -44,12 +46,12 @@ export function SettingRow({
         <p className="mt-1 text-xs text-stone-500">{description}</p>
       </div>
       <div>
-        <Label className="sr-only">值</Label>
+        <Label className="sr-only">{t("pg.settings.value")}</Label>
         <Input name="value" defaultValue={display} />
         {error && <p className="mt-1 text-xs text-red-700">{error}</p>}
       </div>
       <Button type="submit" size="sm" disabled={pending}>
-        {pending ? "…" : "保存"}
+        {pending ? "…" : t("pg.settings.save")}
       </Button>
     </form>
   );

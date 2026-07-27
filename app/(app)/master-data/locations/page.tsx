@@ -1,8 +1,12 @@
 import { createClient } from "@/lib/supabase/server";
 import { LocationCreateForm } from "./location-form";
 import { Badge } from "@/components/ui/badge";
+import { getRequestLocale } from "@/app/actions/i18n";
+import { getDictionary, t } from "@/lib/i18n/dictionaries";
 
 export default async function LocationsPage() {
+  const locale = await getRequestLocale();
+  const messages = getDictionary(locale);
   const supabase = await createClient();
   const { data: locations } = await supabase
     .from("locations")
@@ -12,9 +16,11 @@ export default async function LocationsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold">储位</h1>
+        <h1 className="text-2xl font-semibold">
+          {t(messages, "pg.masterData.locations.title")}
+        </h1>
         <p className="mt-1 text-sm text-stone-500">
-          两级储位：拣货位固定、存储位动态按批号分开（ADR-0002）。
+          {t(messages, "pg.masterData.locations.intro")}
         </p>
       </div>
       <LocationCreateForm />
@@ -22,10 +28,18 @@ export default async function LocationsPage() {
         <table className="w-full text-left text-sm">
           <thead className="bg-stone-50 text-stone-500">
             <tr>
-              <th className="px-4 py-3 font-medium">编码</th>
-              <th className="px-4 py-3 font-medium">类型</th>
-              <th className="px-4 py-3 font-medium">温区</th>
-              <th className="px-4 py-3 font-medium">状态</th>
+              <th className="px-4 py-3 font-medium">
+                {t(messages, "pg.masterData.common.code")}
+              </th>
+              <th className="px-4 py-3 font-medium">
+                {t(messages, "pg.masterData.locations.typeHeader")}
+              </th>
+              <th className="px-4 py-3 font-medium">
+                {t(messages, "pg.masterData.common.tempZone")}
+              </th>
+              <th className="px-4 py-3 font-medium">
+                {t(messages, "pg.masterData.common.status")}
+              </th>
             </tr>
           </thead>
           <tbody>

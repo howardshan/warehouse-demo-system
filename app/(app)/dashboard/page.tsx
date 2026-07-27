@@ -1,8 +1,12 @@
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import Link from "next/link";
+import { getRequestLocale } from "@/app/actions/i18n";
+import { getDictionary, t } from "@/lib/i18n/dictionaries";
 
 export default async function DashboardPage() {
+  const locale = await getRequestLocale();
+  const messages = getDictionary(locale);
   const supabase = await createClient();
   const today = new Date();
   const inThirtyDays = new Date(today);
@@ -27,61 +31,66 @@ export default async function DashboardPage() {
 
   const tiles = [
     {
-      label: "待处理涨价提醒",
+      label: t(messages, "pg.dashboard.priceAlertsLabel"),
       count: priceAlerts.count ?? 0,
       href: "/purchasing/price-alerts",
-      hint: "成本上涨非阻断提醒",
+      hint: t(messages, "pg.dashboard.priceAlertsHint"),
     },
     {
-      label: "超时待称重筐",
+      label: t(messages, "pg.dashboard.pendingWeightLabel"),
       count: pendingWeight.count ?? 0,
       href: "/warehouse/pending-weight",
-      hint: `已拣完超过 ${pendingWeightHours} 小时`,
+      hint: t(messages, "pg.dashboard.pendingWeightHint").replace(
+        "{h}",
+        String(pendingWeightHours),
+      ),
     },
     {
-      label: "待录入 POD / 调整",
+      label: t(messages, "pg.dashboard.missingPodLabel"),
       count: missingPod.count ?? 0,
       href: "/delivery/pod",
-      hint: "已放行或运输中但未签收",
+      hint: t(messages, "pg.dashboard.missingPodHint"),
     },
     {
-      label: "待毛利审批",
+      label: t(messages, "pg.dashboard.marginApprovalsLabel"),
       count: marginApprovals.count ?? 0,
       href: "/sales/approvals",
-      hint: "低毛利或低于成本",
+      hint: t(messages, "pg.dashboard.marginApprovalsHint"),
     },
     {
-      label: "信用受限客户",
+      label: t(messages, "pg.dashboard.creditRiskLabel"),
       count: creditRisk.count ?? 0,
       href: "/finance/credit-control",
-      hint: "超额、暂停新单或完全冻结",
+      hint: t(messages, "pg.dashboard.creditRiskHint"),
     },
     {
-      label: "30 天内 Permit 到期",
+      label: t(messages, "pg.dashboard.permitsLabel"),
       count: permits.count ?? 0,
       href: "/customers",
-      hint: "Sales Permit 到期预警",
+      hint: t(messages, "pg.dashboard.permitsHint"),
     },
     {
-      label: "30 天内临期批次",
+      label: t(messages, "pg.dashboard.nearExpiryLabel"),
       count: nearExpiry.count ?? 0,
       href: "/inventory/batches",
-      hint: "仍处于 available 的批次",
+      hint: t(messages, "pg.dashboard.nearExpiryHint"),
     },
     {
-      label: "库存不符盘点",
+      label: t(messages, "pg.dashboard.mismatchesLabel"),
       count: mismatches.count ?? 0,
       href: "/inventory/stock",
-      hint: "stock_mismatch 待办任务",
+      hint: t(messages, "pg.dashboard.mismatchesHint"),
     },
   ];
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-stone-900">待办看板</h1>
+        <h1 className="text-2xl font-semibold text-stone-900">
+          {t(messages, "pg.dashboard.title")}
+        </h1>
         <p className="mt-1 text-sm text-stone-500">
-          Phase 9 运营异常汇总；点击卡片进入对应处理队列。
+          {t(messages, "pg.dashboard.subtitle")}
         </p>
       </div>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

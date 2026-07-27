@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getRequestLocale } from "@/app/actions/i18n";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
-import { getDictionary } from "@/lib/i18n/dictionaries";
+import { getDictionary, t } from "@/lib/i18n/dictionaries";
 import { statusLabel } from "@/lib/i18n/status";
 import { formatMoney } from "@/lib/utils";
 import { IssuePoButton, PoLineForm } from "../../purchasing-forms";
@@ -99,9 +99,9 @@ export default async function PurchaseOrderDetailPage({
       {order.status === "draft" && (
         <Card>
           <CardHeader>
-            <h2 className="text-lg font-semibold">添加采购明细</h2>
+            <h2 className="text-lg font-semibold">{t(messages, "pg.purchasing.addPoLine")}</h2>
             <p className="text-sm text-stone-500">
-              按本单供应商下的原产品采购包装下单。同一商品不同供应商请在「原产品」分别建档；销售拆包与卖价在商品主数据维护。
+              {t(messages, "pg.purchasing.addPoLineDesc")}
             </p>
           </CardHeader>
           <CardBody>
@@ -114,13 +114,13 @@ export default async function PurchaseOrderDetailPage({
         <table className="w-full text-left text-sm">
           <thead className="bg-stone-50 text-stone-500">
             <tr>
-              <th className="px-4 py-3">行</th>
-              <th className="px-4 py-3">商品 / SKU</th>
-              <th className="px-4 py-3">数量</th>
-              <th className="px-4 py-3">单位</th>
-              <th className="px-4 py-3">预计重量 lb</th>
-              <th className="px-4 py-3">单价</th>
-              <th className="px-4 py-3">已收</th>
+              <th className="px-4 py-3">{t(messages, "pg.purchasing.lineNo")}</th>
+              <th className="px-4 py-3">{t(messages, "pg.purchasing.productSku")}</th>
+              <th className="px-4 py-3">{t(messages, "pg.purchasing.qty")}</th>
+              <th className="px-4 py-3">{t(messages, "pg.purchasing.unit")}</th>
+              <th className="px-4 py-3">{t(messages, "pg.purchasing.estimatedWeightLb")}</th>
+              <th className="px-4 py-3">{t(messages, "pg.purchasing.unitPrice")}</th>
+              <th className="px-4 py-3">{t(messages, "pg.purchasing.received")}</th>
             </tr>
           </thead>
           <tbody>
@@ -155,7 +155,7 @@ export default async function PurchaseOrderDetailPage({
             {!lines?.length && (
               <tr>
                 <td colSpan={7} className="px-4 py-8 text-center text-stone-400">
-                  尚未添加明细
+                  {t(messages, "pg.purchasing.noLines")}
                 </td>
               </tr>
             )}

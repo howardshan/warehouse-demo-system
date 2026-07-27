@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { createCustomer } from "@/app/actions/master-data";
 import { CREDIT_STATUSES } from "@/lib/domain/schemas";
+import { useI18n } from "@/components/i18n/provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,16 +11,16 @@ import { Select } from "@/components/ui/select";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 
 export function CustomerCreateForm() {
+  const { t } = useI18n();
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
   return (
     <Card>
       <CardHeader>
-        <h2 className="text-lg font-semibold">新建客户</h2>
+        <h2 className="text-lg font-semibold">{t("pg.customers.newCustomer")}</h2>
         <p className="text-sm text-stone-500">
-          信用状态变更在数据库层仅 finance/admin 可写（铁律 5/6）。Sales Permit
-          必须有有效期。
+          {t("pg.customers.newCustomerHint")}
         </p>
       </CardHeader>
       <CardBody>
@@ -57,15 +58,15 @@ export function CustomerCreateForm() {
           }}
         >
           <div>
-            <Label>客户编码</Label>
+            <Label>{t("pg.customers.customerCode")}</Label>
             <Input name="code" required />
           </div>
           <div>
-            <Label>餐馆名</Label>
+            <Label>{t("pg.customers.restaurantName")}</Label>
             <Input name="name" required />
           </div>
           <div>
-            <Label>法定名称</Label>
+            <Label>{t("pg.customers.legalName")}</Label>
             <Input name="legal_name" />
           </div>
           <div>
@@ -73,7 +74,7 @@ export function CustomerCreateForm() {
             <Input name="tax_id" />
           </div>
           <div>
-            <Label>信用额度</Label>
+            <Label>{t("pg.customers.creditLimitFull")}</Label>
             <Input
               name="credit_limit"
               type="number"
@@ -84,7 +85,7 @@ export function CustomerCreateForm() {
             />
           </div>
           <div>
-            <Label>账期(天, 0=COD)</Label>
+            <Label>{t("pg.customers.paymentTermsDays")}</Label>
             <Input
               name="payment_terms_days"
               type="number"
@@ -94,7 +95,7 @@ export function CustomerCreateForm() {
             />
           </div>
           <div>
-            <Label>逾期停供天数</Label>
+            <Label>{t("pg.customers.overdueBlockDaysLabel")}</Label>
             <Input
               name="overdue_block_days"
               type="number"
@@ -103,7 +104,7 @@ export function CustomerCreateForm() {
             />
           </div>
           <div>
-            <Label>信用状态</Label>
+            <Label>{t("pg.customers.creditStatus")}</Label>
             <Select name="credit_status" defaultValue="ok">
               {CREDIT_STATUSES.map((s) => (
                 <option key={s} value={s}>
@@ -113,7 +114,7 @@ export function CustomerCreateForm() {
             </Select>
           </div>
           <div className="md:col-span-2">
-            <Label>信用备注</Label>
+            <Label>{t("pg.customers.creditNote")}</Label>
             <Input name="credit_status_note" />
           </div>
           <div>
@@ -121,15 +122,15 @@ export function CustomerCreateForm() {
             <Input name="sales_permit_url" type="url" placeholder="https://..." />
           </div>
           <div>
-            <Label>Sales Permit 有效期</Label>
+            <Label>{t("pg.customers.salesPermitExpiry")}</Label>
             <Input name="sales_permit_expiry" type="date" />
           </div>
           <div>
-            <Label>配送线路</Label>
+            <Label>{t("pg.customers.deliveryRoute")}</Label>
             <Input name="delivery_route" />
           </div>
           <div>
-            <Label>默认送货地址</Label>
+            <Label>{t("pg.customers.defaultAddress")}</Label>
             <Input name="default_address" />
           </div>
           {error && (
@@ -137,7 +138,7 @@ export function CustomerCreateForm() {
           )}
           <div className="md:col-span-2">
             <Button type="submit" disabled={pending}>
-              {pending ? "保存中…" : "创建客户"}
+              {pending ? t("pg.customers.saving") : t("pg.customers.createCustomer")}
             </Button>
           </div>
         </form>

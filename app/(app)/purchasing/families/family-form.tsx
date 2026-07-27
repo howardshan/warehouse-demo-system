@@ -12,6 +12,7 @@ import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
+import { useI18n } from "@/components/i18n/provider";
 
 type Option = { id: string; name: string };
 
@@ -22,6 +23,7 @@ export function ProductFamilyCreateForm({
   suppliers: Option[];
   categories: Option[];
 }) {
+  const { t } = useI18n();
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
@@ -29,9 +31,9 @@ export function ProductFamilyCreateForm({
   return (
     <Card>
       <CardHeader>
-        <h2 className="text-lg font-semibold">新增原产品</h2>
+        <h2 className="text-lg font-semibold">{t("pg.purchasing.newFamily")}</h2>
         <p className="text-sm text-stone-500">
-          须指定供应商与分类。同一商品不同供应商请各建一条原产品。
+          {t("pg.purchasing.newFamilyFormDesc")}
         </p>
       </CardHeader>
       <CardBody>
@@ -65,10 +67,10 @@ export function ProductFamilyCreateForm({
           }}
         >
           <div>
-            <Label required>供应商</Label>
+            <Label required>{t("pg.purchasing.supplier")}</Label>
             <Select name="supplier_id" required defaultValue="">
               <option value="" disabled>
-                请选择供应商
+                {t("pg.purchasing.selectSupplier")}
               </option>
               {suppliers.map((s) => (
                 <option key={s.id} value={s.id}>
@@ -78,10 +80,10 @@ export function ProductFamilyCreateForm({
             </Select>
           </div>
           <div>
-            <Label required>分类</Label>
+            <Label required>{t("pg.purchasing.category")}</Label>
             <Select name="category_id" required defaultValue="">
               <option value="" disabled>
-                请选择分类
+                {t("pg.purchasing.selectCategory")}
               </option>
               {categories.map((c) => (
                 <option key={c.id} value={c.id}>
@@ -90,11 +92,11 @@ export function ProductFamilyCreateForm({
               ))}
             </Select>
             <p className="mt-1 text-xs text-stone-500">
-              分类可在「原产品分类」页维护
+              {t("pg.purchasing.categoryMaintainHint")}
             </p>
           </div>
           <div>
-            <Label required>原产品编码</Label>
+            <Label required>{t("pg.purchasing.familyCode")}</Label>
             <Input
               name="code"
               placeholder="PEPPER"
@@ -102,15 +104,15 @@ export function ProductFamilyCreateForm({
               required
             />
             <p className="mt-1 text-xs text-stone-500">
-              编码全局唯一；不同供应商须用不同编码（如 PEPPER-A / PEPPER-B）
+              {t("pg.purchasing.familyCodeHint")}
             </p>
           </div>
           <div>
-            <Label required>原产品名称</Label>
-            <Input name="name" placeholder="青椒 / Green Pepper" required />
+            <Label required>{t("pg.purchasing.familyName")}</Label>
+            <Input name="name" placeholder={t("pg.purchasing.familyNamePlaceholder")} required />
           </div>
           <div>
-            <Label required>采购单位</Label>
+            <Label required>{t("pg.purchasing.purchaseUom")}</Label>
             <Select name="purchase_uom" defaultValue="case" required>
               {ORDERING_UOMS.map((u) => (
                 <option key={u} value={u}>
@@ -128,26 +130,26 @@ export function ProductFamilyCreateForm({
             />
             <div>
               <Label htmlFor="is_catch_weight_create" className="mb-0">
-                需要称重
+                {t("pg.purchasing.needCatchWeight")}
               </Label>
               <p className="mt-1 text-xs text-stone-500">
-                勾选后：盲收与 Invoice 必填重量；核对时可对超阈值偏差报警
+                {t("pg.purchasing.catchWeightHint")}
               </p>
             </div>
           </div>
           <div>
-            <Label>外包装重量（lb，选填）</Label>
+            <Label>{t("pg.purchasing.outerPackWeightOptional")}</Label>
             <Input
               name="outer_pack_weight_lb"
               type="number"
               min="0"
               step="0.01"
-              placeholder="如空盒 1.5"
+              placeholder={t("pg.purchasing.emptyBoxPlaceholder")}
             />
           </div>
           <div>
-            <Label>备注</Label>
-            <Input name="notes" placeholder="可选" />
+            <Label>{t("pg.purchasing.notes")}</Label>
+            <Input name="notes" placeholder={t("pg.purchasing.optional")} />
           </div>
           {error && (
             <p className="md:col-span-2 text-sm text-red-700">{error}</p>
@@ -159,16 +161,16 @@ export function ProductFamilyCreateForm({
                 pending || suppliers.length === 0 || categories.length === 0
               }
             >
-              {pending ? "保存中…" : "创建原产品"}
+              {pending ? t("pg.purchasing.saving") : t("pg.purchasing.createFamily")}
             </Button>
             {suppliers.length === 0 && (
               <p className="mt-2 text-sm text-amber-700">
-                请先在供应商主数据中新增供应商
+                {t("pg.purchasing.addSupplierFirst")}
               </p>
             )}
             {categories.length === 0 && (
               <p className="mt-2 text-sm text-amber-700">
-                请先在「原产品分类」中新增分类
+                {t("pg.purchasing.addCategoryFirst")}
               </p>
             )}
           </div>
@@ -198,6 +200,7 @@ export function ProductFamilyEditForm({
   suppliers: Option[];
   categories: Option[];
 }) {
+  const { t } = useI18n();
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
@@ -228,14 +231,14 @@ export function ProductFamilyEditForm({
       }}
     >
       <div>
-        <Label required>供应商</Label>
+        <Label required>{t("pg.purchasing.supplier")}</Label>
         <Select
           name="supplier_id"
           defaultValue={family.supplier_id ?? ""}
           required
         >
           <option value="" disabled>
-            请选择
+            {t("pg.purchasing.selectPlaceholder")}
           </option>
           {suppliers.map((s) => (
             <option key={s.id} value={s.id}>
@@ -245,14 +248,14 @@ export function ProductFamilyEditForm({
         </Select>
       </div>
       <div>
-        <Label required>分类</Label>
+        <Label required>{t("pg.purchasing.category")}</Label>
         <Select
           name="category_id"
           defaultValue={family.category_id ?? ""}
           required
         >
           <option value="" disabled>
-            请选择
+            {t("pg.purchasing.selectPlaceholder")}
           </option>
           {categories.map((c) => (
             <option key={c.id} value={c.id}>
@@ -262,15 +265,15 @@ export function ProductFamilyEditForm({
         </Select>
       </div>
       <div>
-        <Label required>编码</Label>
+        <Label required>{t("pg.purchasing.code")}</Label>
         <Input name="code" defaultValue={family.code} required />
       </div>
       <div>
-        <Label required>名称</Label>
+        <Label required>{t("pg.purchasing.name")}</Label>
         <Input name="name" defaultValue={family.name} required />
       </div>
       <div>
-        <Label required>采购单位</Label>
+        <Label required>{t("pg.purchasing.purchaseUom")}</Label>
         <Select
           name="purchase_uom"
           defaultValue={family.purchase_uom ?? "case"}
@@ -284,14 +287,14 @@ export function ProductFamilyEditForm({
         </Select>
       </div>
       <div>
-        <Label>外包装重量 lb</Label>
+        <Label>{t("pg.purchasing.outerPackWeightLb")}</Label>
         <Input
           name="outer_pack_weight_lb"
           type="number"
           min="0"
           step="0.01"
           defaultValue={family.outer_pack_weight_lb ?? ""}
-          placeholder="选填"
+          placeholder={t("pg.purchasing.optional")}
         />
       </div>
       <div className="flex items-center gap-2 pb-2">
@@ -302,23 +305,23 @@ export function ProductFamilyEditForm({
           defaultChecked={family.is_catch_weight}
         />
         <Label htmlFor={`is_catch_weight_${family.id}`} className="mb-0">
-          需要称重
+          {t("pg.purchasing.needCatchWeight")}
         </Label>
       </div>
       <div>
-        <Label>状态</Label>
+        <Label>{t("pg.purchasing.status")}</Label>
         <Select name="status" defaultValue={family.is_active ? "on" : "off"}>
-          <option value="on">启用</option>
-          <option value="off">停用</option>
+          <option value="on">{t("pg.purchasing.enabled")}</option>
+          <option value="off">{t("pg.purchasing.disabled")}</option>
         </Select>
       </div>
       <div className="md:col-span-6 flex flex-wrap items-end gap-3">
         <div className="min-w-[12rem] flex-1">
-          <Label>备注</Label>
+          <Label>{t("pg.purchasing.notes")}</Label>
           <Input name="notes" defaultValue={family.notes ?? ""} />
         </div>
         <Button type="submit" size="sm" disabled={pending}>
-          {pending ? "…" : "保存"}
+          {pending ? "…" : t("pg.purchasing.save")}
         </Button>
         {error && <p className="text-xs text-red-700">{error}</p>}
       </div>

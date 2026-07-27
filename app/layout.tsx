@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Source_Sans_3, IBM_Plex_Sans } from "next/font/google";
+import { getRequestLocale } from "@/app/actions/i18n";
+import { getDictionary, t } from "@/lib/i18n/dictionaries";
 import "./globals.css";
 
 const sans = Source_Sans_3({
@@ -13,18 +15,29 @@ const display = IBM_Plex_Sans({
   variable: "--font-display",
 });
 
-export const metadata: Metadata = {
-  title: "仓配管理系统",
-  description: "食品配送管理系统 — Phase 1 地基",
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getRequestLocale();
+  const messages = getDictionary(locale);
+  return {
+    title: t(messages, "app.name"),
+    description: t(messages, "app.tagline"),
+  };
+}
+
+const HTML_LANG: Record<string, string> = {
+  zh: "zh-CN",
+  en: "en",
+  "es-MX": "es-MX",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const locale = await getRequestLocale();
   return (
-    <html lang="zh-CN">
+    <html lang={HTML_LANG[locale] ?? "zh-CN"}>
       <body className={`${sans.variable} ${display.variable} antialiased`}>
         {children}
       </body>
