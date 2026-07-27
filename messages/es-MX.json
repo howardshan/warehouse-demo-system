@@ -79,12 +79,9 @@
     "rolePermissions": "Permisos por rol",
     "auditLog": "Bitácora",
     "settings": "Configuración",
-<<<<<<< HEAD
     "payments": "Pagos",
-    "allOrders": "Todas las órdenes"
-=======
+    "allOrders": "Todas las órdenes",
     "routes": "Rutas de entrega"
->>>>>>> 81fe284f9fcafb093982c6de6b8a33316a2e38cc
   },
   "it": {
     "usersTitle": "Usuarios y roles",
@@ -148,7 +145,6 @@
       "cancelled": "Cancelado"
     }
   },
-<<<<<<< HEAD
   "pg": {
     "inventory": {
       "stockTitle": "Existencias",
@@ -1077,7 +1073,7 @@
       "back": "Todas las órdenes",
       "status": "Estado"
     }
-=======
+  },
   "roles": {
     "admin": "Administrador",
     "it": "TI",
@@ -1088,6 +1084,5 @@
     "account": "Cuentas",
     "finance": "Finanzas",
     "driver": "Chofer"
->>>>>>> 81fe284f9fcafb093982c6de6b8a33316a2e38cc
   }
 }

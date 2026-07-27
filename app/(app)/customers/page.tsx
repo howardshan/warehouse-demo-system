@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { getRequestLocale } from "@/app/actions/i18n";
-import { getDictionary, t } from "@/lib/i18n/dictionaries";
+import { CustomerCreateForm } from "./customer-form";
 import { Badge } from "@/components/ui/badge";
 import { formatMoney } from "@/lib/utils";
 
@@ -20,8 +19,6 @@ function normRoute(r: unknown): CustomerRoute {
 }
 
 export default async function CustomersPage() {
-  const locale = await getRequestLocale();
-  const messages = getDictionary(locale);
   const supabase = await createClient();
   const [{ data: customers }, { data: routes }] = await Promise.all([
     supabase
@@ -40,28 +37,16 @@ export default async function CustomersPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold">{t(messages, "pg.customers.customersTitle")}</h1>
+        <h1 className="text-2xl font-semibold">客户与信用</h1>
         <p className="mt-1 text-sm text-stone-500">
-          {t(messages, "pg.customers.customersHint")}
+          信用占用将在后续 Phase 计入「已签收未开票」（铁律 5）。
         </p>
       </div>
-<<<<<<< HEAD
-=======
       <CustomerCreateForm routes={routes ?? []} />
->>>>>>> 81fe284f9fcafb093982c6de6b8a33316a2e38cc
       <div className="overflow-hidden rounded-lg border border-stone-200 bg-white">
         <table className="w-full text-left text-sm">
           <thead className="bg-stone-50 text-stone-500">
             <tr>
-<<<<<<< HEAD
-              <th className="px-4 py-3 font-medium">{t(messages, "pg.customers.code")}</th>
-              <th className="px-4 py-3 font-medium">{t(messages, "pg.customers.name")}</th>
-              <th className="px-4 py-3 font-medium">{t(messages, "pg.customers.creditLimit")}</th>
-              <th className="px-4 py-3 font-medium">{t(messages, "pg.customers.paymentTerms")}</th>
-              <th className="px-4 py-3 font-medium">{t(messages, "pg.customers.creditStatus")}</th>
-              <th className="px-4 py-3 font-medium">{t(messages, "pg.customers.permitExpiry")}</th>
-              <th className="px-4 py-3 font-medium">{t(messages, "pg.customers.route")}</th>
-=======
               <th className="px-4 py-3 font-medium">编码</th>
               <th className="px-4 py-3 font-medium">名称</th>
               <th className="px-4 py-3 font-medium">额度</th>
@@ -69,7 +54,6 @@ export default async function CustomersPage() {
               <th className="px-4 py-3 font-medium">信用状态</th>
               <th className="px-4 py-3 font-medium">Permit 到期</th>
               <th className="px-4 py-3 font-medium">配送路线</th>
->>>>>>> 81fe284f9fcafb093982c6de6b8a33316a2e38cc
             </tr>
           </thead>
           <tbody>

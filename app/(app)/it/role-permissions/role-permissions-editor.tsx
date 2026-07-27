@@ -3,11 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { setRolePermissions } from "@/app/actions/it";
-<<<<<<< HEAD
-import { APP_ROLE_LABELS, type AppRole } from "@/lib/auth/roles";
-=======
 import { type AppRole } from "@/lib/auth/roles";
->>>>>>> 81fe284f9fcafb093982c6de6b8a33316a2e38cc
 import { useI18n } from "@/components/i18n/provider";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
@@ -62,11 +58,7 @@ export function RolePermissionsEditor({
       <div className="flex flex-wrap items-end gap-4">
         <div className="max-w-xs">
           <label className="mb-1 block text-sm font-medium text-stone-700">
-<<<<<<< HEAD
-            {t("pg.it.selectRole")}
-=======
             {t("it.selectRole")}
->>>>>>> 81fe284f9fcafb093982c6de6b8a33316a2e38cc
           </label>
           <Select
             value={selectedRole}
@@ -82,15 +74,8 @@ export function RolePermissionsEditor({
           </Select>
         </div>
         <p className="pb-2 text-sm text-stone-500">
-<<<<<<< HEAD
-          {t("pg.it.selectedCount")
-            .replace("{n}", String(selectedCount))
-            .replace("{total}", String(permissions.length))}
-          {isAdmin && t("pg.it.adminAlwaysAll")}
-=======
           {t("it.selected")} {selectedCount} / {permissions.length}
           {isAdmin && ` · ${t("it.adminAlwaysAll")}`}
->>>>>>> 81fe284f9fcafb093982c6de6b8a33316a2e38cc
         </p>
       </div>
 
@@ -113,11 +98,7 @@ export function RolePermissionsEditor({
                     })
                   }
                 >
-<<<<<<< HEAD
-                  {t("pg.it.selectAllModule")}
-=======
                   {t("it.selectAllModule")}
->>>>>>> 81fe284f9fcafb093982c6de6b8a33316a2e38cc
                 </button>
                 <button
                   type="button"
@@ -130,11 +111,7 @@ export function RolePermissionsEditor({
                     })
                   }
                 >
-<<<<<<< HEAD
-                  {t("pg.it.clear")}
-=======
                   {t("it.clear")}
->>>>>>> 81fe284f9fcafb093982c6de6b8a33316a2e38cc
                 </button>
               </div>
             )}
@@ -193,17 +170,10 @@ export function RolePermissionsEditor({
         }}
       >
         {pending
-<<<<<<< HEAD
-          ? t("pg.it.saving")
-          : isAdmin
-            ? t("pg.it.adminNotEditable")
-            : t("pg.it.saveRolePermissions")}
-=======
           ? t("it.saving")
           : isAdmin
             ? t("it.adminNotEditable")
             : t("it.saveRolePerms")}
->>>>>>> 81fe284f9fcafb093982c6de6b8a33316a2e38cc
       </Button>
     </div>
   );
