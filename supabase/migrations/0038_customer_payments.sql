@@ -1,5 +1,10 @@
 -- ============================================================
--- 付款记录 / 预存款
+-- Migration: 0038_customer_payments.sql
+-- 守护铁律: —
+-- 目的:   付款记录 / 预存款：订单付款 + 预存充值/退款；
+--          发运单应收/已付/付款状态视图与客户预存余额视图。
+--          （原 0033_customer_payments，因与权限迁移撞号重编为 0038）
+-- 关联文档: /docs/modules/10-customers-credit.md
 -- 回滚: drop view v_customer_prepaid, v_sl_payment; drop table customer_payments cascade;
 -- ============================================================
 

@@ -1,4 +1,9 @@
 -- ============================================================
+-- Migration: 0039_payment_methods_prepaid_auto.sql
+-- 守护铁律: —
+-- 目的:   付款方式明细（现金/支票/ACH）+ 支票凭证 + 预存款自动抵扣。
+--          （原 0034_payment_methods_prepaid_auto，重编为 0039）
+-- 关联文档: /docs/modules/10-customers-credit.md
 -- 付款方式明细（现金/支票/ACH）+ 支票凭证 + 预存款自动抵扣
 -- 回滚: drop trigger trg_apply_prepaid on shipping_lists;
 --       drop function fn_apply_prepaid(uuid); drop function fn_prepaid_on_signed();
