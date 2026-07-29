@@ -984,7 +984,20 @@
       "podFileUrl": "POD 文件 URL",
       "confirmPodCloseOrder": "确认签收并关闭订单",
       "signerLabel": "签收人：",
-      "signedAtLabel": "签收时间："
+      "signedAtLabel": "签收时间：",
+      "genTime": "生成时间",
+      "deliveryTime": "要求送达",
+      "searchPlaceholder": "搜索单号 / 客户",
+      "statusFilter": "状态",
+      "allStatus": "全部状态",
+      "noMatch": "无匹配的拣货单",
+      "resultCount": "共 {n} 张",
+      "colPickNo": "拣货单号",
+      "colSoNo": "订单号",
+      "colCustomer": "公司名称",
+      "colActions": "操作",
+      "withdraw": "撤销",
+      "confirmWithdraw": "确认撤销并解锁"
     },
     "payments": {
       "title": "付款记录",

@@ -984,7 +984,20 @@
       "podFileUrl": "POD File URL",
       "confirmPodCloseOrder": "Confirm Delivery and Close Order",
       "signerLabel": "Signed by: ",
-      "signedAtLabel": "Signed at: "
+      "signedAtLabel": "Signed at: ",
+      "genTime": "Created",
+      "deliveryTime": "Delivery",
+      "searchPlaceholder": "Search number / customer",
+      "statusFilter": "Status",
+      "allStatus": "All statuses",
+      "noMatch": "No matching pick lists",
+      "resultCount": "{n} total",
+      "colPickNo": "Pick No.",
+      "colSoNo": "Order No.",
+      "colCustomer": "Customer",
+      "colActions": "Actions",
+      "withdraw": "Withdraw",
+      "confirmWithdraw": "Confirm withdraw & unlock"
     },
     "payments": {
       "title": "Payments",
