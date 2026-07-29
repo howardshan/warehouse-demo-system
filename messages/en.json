@@ -828,7 +828,12 @@
         "approvalReason": "Approval reason",
         "requestApproval": "Request approval",
         "genPickList": "Generate pick list and lock order",
-        "approvalRecords": "Approval records"
+        "approvalRecords": "Approval records",
+        "confirmedBadge": "Confirmed · credit, margin & stock all passed",
+        "confirmedToast": "Checks passed, order confirmed",
+        "needApprovalToast": "Low margin — manager approval required",
+        "creditHoldToast": "Credit check failed — order on hold",
+        "revalidate": "Re-validate"
       },
       "assistant": {
         "customerCredit": "Customer credit",

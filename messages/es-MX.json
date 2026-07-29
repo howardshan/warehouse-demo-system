@@ -828,7 +828,12 @@
         "approvalReason": "Motivo de aprobación",
         "requestApproval": "Solicitar aprobación",
         "genPickList": "Generar lista de surtido y bloquear",
-        "approvalRecords": "Registros de aprobación"
+        "approvalRecords": "Registros de aprobación",
+        "confirmedBadge": "Confirmado · crédito, margen y stock aprobados",
+        "confirmedToast": "Verificado, pedido confirmado",
+        "needApprovalToast": "Margen bajo — requiere aprobación del gerente",
+        "creditHoldToast": "Crédito no aprobado — pedido retenido",
+        "revalidate": "Revalidar"
       },
       "assistant": {
         "customerCredit": "Crédito del cliente",

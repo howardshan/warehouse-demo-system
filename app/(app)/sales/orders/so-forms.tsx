@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useI18n } from "@/components/i18n/provider";
+import { useToast } from "@/components/ui/toast";
 import { formatMoney } from "@/lib/utils";
 
 type ProductOpt = {
@@ -267,31 +268,68 @@ export function AddSoLineForm({
   );
 }
 
-export function ConfirmSoButton({ salesOrderId }: { salesOrderId: string }) {
+export function ConfirmSoButton({
+  salesOrderId,
+  status,
+}: {
+  salesOrderId: string;
+  status: string;
+}) {
   const { t } = useI18n();
+  const { notify } = useToast();
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const confirmed = status === "confirmed";
+
+  const runConfirm = () => {
+    setError(null);
+    start(async () => {
+      try {
+        const res = await confirmSalesOrder(salesOrderId);
+        // 依三闸结果给出明确反馈
+        if (res.status === "confirmed") {
+          notify(t("pg.sales.orders.confirmedToast"), "success");
+        } else if (res.status === "pending_approval") {
+          notify(t("pg.sales.orders.needApprovalToast"), "error");
+        } else if (res.status === "credit_hold") {
+          notify(t("pg.sales.orders.creditHoldToast"), "error");
+        }
+        router.refresh();
+      } catch (err) {
+        const msg =
+          err instanceof Error ? err.message : t("pg.sales.orders.submitFailed");
+        setError(msg);
+        notify(msg, "error");
+      }
+    });
+  };
 
   return (
     <div className="space-y-2">
-      <Button
-        type="button"
-        disabled={pending}
-        onClick={() => {
-          setError(null);
-          start(async () => {
-            try {
-              await confirmSalesOrder(salesOrderId);
-              router.refresh();
-            } catch (err) {
-              setError(err instanceof Error ? err.message : t("pg.sales.orders.submitFailed"));
-            }
-          });
-        }}
-      >
-        {pending ? t("pg.sales.orders.checkingStock") : t("pg.sales.orders.confirmValidate")}
-      </Button>
+      {confirmed ? (
+        // 已确认：显示通过态 + 次要「重新校验」入口，不再用醒目主按钮
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="inline-flex items-center gap-1 rounded-md bg-teal-50 px-3 py-2 text-sm font-medium text-teal-800">
+            ✓ {t("pg.sales.orders.confirmedBadge")}
+          </span>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            disabled={pending}
+            onClick={runConfirm}
+          >
+            {pending ? t("pg.sales.orders.checkingStock") : t("pg.sales.orders.revalidate")}
+          </Button>
+        </div>
+      ) : (
+        <Button type="button" disabled={pending} onClick={runConfirm}>
+          {pending
+            ? t("pg.sales.orders.checkingStock")
+            : t("pg.sales.orders.confirmValidate")}
+        </Button>
+      )}
       {error && (
         <p className="whitespace-pre-wrap text-sm text-red-700" role="alert">
           {error}

@@ -469,16 +469,23 @@ export async function deleteSoLine(lineId: string, salesOrderId: string): Promis
   revalidatePath(`/sales/orders/${salesOrderId}`);
 }
 
-export async function confirmSalesOrder(salesOrderId: string): Promise<void> {
+/**
+ * 确认订单并执行三闸校验（信用 / 毛利 / 库存 ATP）。
+ * 返回最终状态供前端反馈：
+ * - confirmed        三项通过，已确认并分配库存
+ * - pending_approval 毛利偏低，需经理审批
+ * - credit_hold      信用未通过，订单挂起
+ * 库存不足等硬错误直接抛出。
+ */
+export async function confirmSalesOrder(
+  salesOrderId: string,
+): Promise<{ status: string }> {
   const { supabase } = await requireUser();
-  // 提交时再次遍历库存；任一商品不足则禁止提交并提示
+  // 提交时再次遍历库存；任一商品不足则禁止提交并提示（硬错误抛出）
   await assertOrderAtp(supabase, salesOrderId);
   const result = await revalidateSoGates(salesOrderId);
   if (!result.ok) throw new Error(result.error);
-  if (result.status && result.status !== "confirmed") {
-    // 信用/毛利未过也不算成功提交出库预留，但库存检查已过
-    // 保持现状：仍返回，由页面展示状态
-  }
+  return { status: result.status ?? "confirmed" };
 }
 
 export async function requestMarginApproval(salesOrderId: string, formData: FormData): Promise<void> {

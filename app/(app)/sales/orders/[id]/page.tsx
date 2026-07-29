@@ -253,7 +253,9 @@ export default async function SalesOrderDetailPage({
         {(order.status === "confirmed" ||
           (unlocked && !!lines?.length)) && (
           <div className="flex flex-wrap items-center gap-3">
-            {unlocked && !!lines?.length && <ConfirmSoButton salesOrderId={id} />}
+            {unlocked && !!lines?.length && (
+              <ConfirmSoButton salesOrderId={id} status={order.status} />
+            )}
             {order.status === "confirmed" && (
               <form action={generatePickList.bind(null, id)}>
                 <Button
