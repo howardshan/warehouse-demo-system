@@ -984,7 +984,20 @@
       "podFileUrl": "URL del archivo POD",
       "confirmPodCloseOrder": "Confirmar entrega y cerrar pedido",
       "signerLabel": "Recibido por: ",
-      "signedAtLabel": "Fecha de entrega: "
+      "signedAtLabel": "Fecha de entrega: ",
+      "genTime": "Creado",
+      "deliveryTime": "Entrega",
+      "searchPlaceholder": "Buscar número / cliente",
+      "statusFilter": "Estado",
+      "allStatus": "Todos los estados",
+      "noMatch": "Sin listas coincidentes",
+      "resultCount": "{n} en total",
+      "colPickNo": "N.º surtido",
+      "colSoNo": "N.º pedido",
+      "colCustomer": "Cliente",
+      "colActions": "Acciones",
+      "withdraw": "Retirar",
+      "confirmWithdraw": "Confirmar retiro y desbloqueo"
     },
     "payments": {
       "title": "Pagos",
