@@ -18,7 +18,7 @@ export default async function ShippingDetailPage({ params }: { params: Promise<{
   const supabase = await createClient();
   const [{ data: shipping }, { data: lines }] = await Promise.all([
     supabase.from("shipping_lists").select("*, sales_orders(so_number, customer_name_snapshot, delivery_address_snapshot)").eq("id", id).maybeSingle(),
-    supabase.from("sl_lines").select("*, products(code, name), batches(lot_no)").eq("shipping_list_id", id).order("line_no"),
+    supabase.from("sl_lines").select("*, products(sku, name), batches(lot_no)").eq("shipping_list_id", id).order("line_no"),
   ]);
   if (!shipping) notFound();
   const order = shipping.sales_orders as unknown as { so_number: string; customer_name_snapshot: string; delivery_address_snapshot: string };
@@ -27,9 +27,9 @@ export default async function ShippingDetailPage({ params }: { params: Promise<{
     <div><Link href="/warehouse/shipping" className="text-sm text-teal-800 hover:underline">← {t(messages, "pg.warehouse.backToShippingList")}</Link><div className="mt-2 flex items-center gap-3"><h1 className="text-2xl font-semibold">{shipping.sl_number}</h1><Badge>{shipping.status}</Badge></div><p className="mt-1 text-sm text-stone-500">{order.so_number} · {order.customer_name_snapshot} · {order.delivery_address_snapshot}</p></div>
     <Card><CardHeader><h2 className="font-semibold">{t(messages, "pg.warehouse.shippingDetail")}</h2></CardHeader><CardBody>
       <div className="space-y-2">{(lines ?? []).map((line) => {
-        const product = line.products as unknown as { code: string; name: string };
+        const product = line.products as unknown as { sku: string; name: string };
         const batch = line.batches as unknown as { lot_no: string };
-        return <div key={line.id} className="grid grid-cols-4 border-b border-stone-100 py-2 text-sm"><span>{product.code} · {product.name}</span><span>{t(messages, "pg.warehouse.batchLabel").replace("{x}", batch.lot_no)}</span><span>{t(messages, "pg.warehouse.unitsSuffix").replace("{x}", String(line.shipped_units))}{line.shipped_weight_lb != null ? ` / ${line.shipped_weight_lb} lb` : ""}</span><span className="text-right">{formatMoney(Number(line.unit_price))}</span></div>;
+        return <div key={line.id} className="grid grid-cols-4 border-b border-stone-100 py-2 text-sm"><span>{product.sku} · {product.name}</span><span>{t(messages, "pg.warehouse.batchLabel").replace("{x}", batch.lot_no)}</span><span>{t(messages, "pg.warehouse.unitsSuffix").replace("{x}", String(line.shipped_units))}{line.shipped_weight_lb != null ? ` / ${line.shipped_weight_lb} lb` : ""}</span><span className="text-right">{formatMoney(Number(line.unit_price))}</span></div>;
       })}</div>
       <div className="mt-4 text-right font-semibold">{t(messages, "pg.warehouse.estimatedReceivable").replace("{x}", formatMoney(total))}</div>
     </CardBody></Card>

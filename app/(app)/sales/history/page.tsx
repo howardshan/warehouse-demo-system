@@ -13,7 +13,7 @@ export default async function SalesHistoryPage({ searchParams }: { searchParams:
   const messages = getDictionary(locale);
   const supabase = await createClient();
   let query = supabase.from("sl_lines").select(
-    "id, unit_price, shipped_units, shipped_weight_lb, created_at, products(code, name), batches(lot_no), shipping_lists!inner(sl_number, status, signed_at, sales_order_id, sales_orders!inner(so_number, customer_name_snapshot))",
+    "id, unit_price, shipped_units, shipped_weight_lb, created_at, products(sku, name), batches(lot_no), shipping_lists!inner(sl_number, status, signed_at, sales_order_id, sales_orders!inner(so_number, customer_name_snapshot))",
   ).eq("shipping_lists.status", "signed").order("created_at", { ascending: false }).limit(100);
   if (q) query = query.or(`code.ilike.%${q}%,name.ilike.%${q}%`, { referencedTable: "products" });
   if (batch) query = query.ilike("batches.lot_no", `%${batch}%`);
@@ -27,10 +27,10 @@ export default async function SalesHistoryPage({ searchParams }: { searchParams:
     <div className="overflow-hidden rounded-lg border border-stone-200 bg-white"><table className="w-full text-left text-sm">
       <thead className="bg-stone-50 text-stone-500"><tr><th className="px-4 py-3">{t(messages, "pg.sales.history.colSignedDate")}</th><th className="px-4 py-3">{t(messages, "pg.sales.history.colOrderShipping")}</th><th className="px-4 py-3">{t(messages, "pg.sales.common.customer")}</th><th className="px-4 py-3">{t(messages, "pg.sales.common.product")}</th><th className="px-4 py-3">{t(messages, "pg.sales.history.colLot")}</th><th className="px-4 py-3">{t(messages, "pg.sales.history.colHistPrice")}</th><th className="px-4 py-3">{t(messages, "pg.sales.history.colShipped")}</th></tr></thead>
       <tbody>{(rows ?? []).map((row) => {
-        const product = row.products as unknown as { code: string; name: string };
+        const product = row.products as unknown as { sku: string; name: string };
         const lot = row.batches as unknown as { lot_no: string };
         const shipping = row.shipping_lists as unknown as { sl_number: string; signed_at: string; sales_order_id: string; sales_orders: { so_number: string; customer_name_snapshot: string } };
-        return <tr key={row.id} className="border-t border-stone-100"><td className="px-4 py-3">{shipping.signed_at?.slice(0, 10)}</td><td className="px-4 py-3"><Link href={`/sales/orders/${shipping.sales_order_id}`} className="text-teal-800 hover:underline">{shipping.sales_orders.so_number}</Link> / {shipping.sl_number}</td><td className="px-4 py-3">{shipping.sales_orders.customer_name_snapshot}</td><td className="px-4 py-3">{product.code} · {product.name}</td><td className="px-4 py-3 font-mono">{lot.lot_no}</td><td className="px-4 py-3 tabular-nums">{formatMoney(Number(row.unit_price))}</td><td className="px-4 py-3">{t(messages, "pg.sales.common.qtyUnit").replace("{n}", String(row.shipped_units))}{row.shipped_weight_lb != null ? ` / ${row.shipped_weight_lb} lb` : ""}</td></tr>;
+        return <tr key={row.id} className="border-t border-stone-100"><td className="px-4 py-3">{shipping.signed_at?.slice(0, 10)}</td><td className="px-4 py-3"><Link href={`/sales/orders/${shipping.sales_order_id}`} className="text-teal-800 hover:underline">{shipping.sales_orders.so_number}</Link> / {shipping.sl_number}</td><td className="px-4 py-3">{shipping.sales_orders.customer_name_snapshot}</td><td className="px-4 py-3">{product.sku} · {product.name}</td><td className="px-4 py-3 font-mono">{lot.lot_no}</td><td className="px-4 py-3 tabular-nums">{formatMoney(Number(row.unit_price))}</td><td className="px-4 py-3">{t(messages, "pg.sales.common.qtyUnit").replace("{n}", String(row.shipped_units))}{row.shipped_weight_lb != null ? ` / ${row.shipped_weight_lb} lb` : ""}</td></tr>;
       })}</tbody>
     </table></div>
   </div>;
