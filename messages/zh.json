@@ -828,7 +828,12 @@
         "approvalReason": "审批原因",
         "requestApproval": "申请审批",
         "genPickList": "生成拣货单并锁单",
-        "approvalRecords": "审批记录"
+        "approvalRecords": "审批记录",
+        "confirmedBadge": "已确认 · 信用/毛利/库存 三项通过",
+        "confirmedToast": "校验通过，订单已确认",
+        "needApprovalToast": "毛利偏低，需经理审批",
+        "creditHoldToast": "信用未通过，订单挂起",
+        "revalidate": "重新校验"
       },
       "assistant": {
         "customerCredit": "客户信用",

@@ -248,27 +248,54 @@ export default async function SalesOrderDetailPage({
         </CardBody>
       </Card>
 
-      <div className="flex flex-wrap gap-3">
-        {unlocked && !!lines?.length && <ConfirmSoButton salesOrderId={id} />}
+      <div className="space-y-3">
+        {/* 主操作：确认订单 / 生成拣货单 */}
+        {(order.status === "confirmed" ||
+          (unlocked && !!lines?.length)) && (
+          <div className="flex flex-wrap items-center gap-3">
+            {unlocked && !!lines?.length && (
+              <ConfirmSoButton salesOrderId={id} status={order.status} />
+            )}
+            {order.status === "confirmed" && (
+              <form action={generatePickList.bind(null, id)}>
+                <Button
+                  type="submit"
+                  variant="secondary"
+                  className="whitespace-nowrap"
+                >
+                  {t(messages, "pg.sales.orders.genPickList")}
+                </Button>
+              </form>
+            )}
+          </div>
+        )}
+
+        {/* 次要操作：低毛利 / 低于成本审批，单独成组避免与主按钮互相挤压 */}
         {unlocked && !!lines?.length && (
           <form
             action={requestMarginApproval.bind(null, id)}
-            className="flex gap-2"
+            className="flex flex-wrap items-center gap-2 rounded-lg border border-stone-200 bg-stone-50/60 p-3"
           >
-            <Select name="approval_type" defaultValue="margin">
+            <Select
+              name="approval_type"
+              defaultValue="margin"
+              className="w-auto min-w-[150px]"
+            >
               <option value="margin">{t(messages, "pg.sales.orders.lowMargin")}</option>
               <option value="below_cost">{t(messages, "pg.sales.orders.belowCost")}</option>
             </Select>
-            <Input name="reason" placeholder={t(messages, "pg.sales.orders.approvalReason")} required />
-            <Button type="submit" variant="secondary">
+            <Input
+              name="reason"
+              placeholder={t(messages, "pg.sales.orders.approvalReason")}
+              required
+              className="min-w-[200px] flex-1"
+            />
+            <Button
+              type="submit"
+              variant="secondary"
+              className="shrink-0 whitespace-nowrap"
+            >
               {t(messages, "pg.sales.orders.requestApproval")}
-            </Button>
-          </form>
-        )}
-        {order.status === "confirmed" && (
-          <form action={generatePickList.bind(null, id)}>
-            <Button type="submit" variant="secondary">
-              {t(messages, "pg.sales.orders.genPickList")}
             </Button>
           </form>
         )}
