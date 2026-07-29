@@ -17,6 +17,9 @@ async function requireUser() {
 }
 
 function numberValue(value: FormDataEntryValue | null, fallback = 0) {
+  // 注意：Number("") === 0（有限数），若不先判空，留空的字段会变成 0 而非默认值，
+  // 会导致 catch-weight 预估重量留空时传 0、触发 estimated_weight_lb > 0 约束报错。
+  if (value === null || String(value).trim() === "") return fallback;
   const number = Number(value);
   return Number.isFinite(number) ? number : fallback;
 }

@@ -125,12 +125,15 @@ export function AddSoLineForm({
       onSubmit={(e) => {
         e.preventDefault();
         if (blocked) return;
-        const fd = new FormData(e.currentTarget);
+        // 在 await 前捕获表单引用：React 在事件处理结束后会把 e.currentTarget 置空，
+        // await 之后再读 e.currentTarget 会是 null（报 reading 'reset'）。
+        const form = e.currentTarget;
+        const fd = new FormData(form);
         setError(null);
         start(async () => {
           try {
             await addSoLine(salesOrderId, fd);
-            e.currentTarget.reset();
+            form.reset();
             resetPicker();
             setQtyUnits("");
             router.refresh();
@@ -395,10 +398,15 @@ export function SoLineEditor({
           disabled={!unlocked}
         />
       </div>
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         {unlocked && (
           <>
-            <Button size="sm" type="submit" disabled={pending}>
+            <Button
+              size="sm"
+              type="submit"
+              disabled={pending}
+              className="shrink-0 whitespace-nowrap"
+            >
               {t("pg.sales.common.save")}
             </Button>
             <Button
@@ -406,6 +414,7 @@ export function SoLineEditor({
               variant="danger"
               type="button"
               disabled={pending}
+              className="shrink-0 whitespace-nowrap"
               onClick={() =>
                 start(async () => {
                   try {
