@@ -997,7 +997,11 @@
       "colCustomer": "公司名称",
       "colActions": "操作",
       "withdraw": "撤销",
-      "confirmWithdraw": "确认撤销并解锁"
+      "confirmWithdraw": "确认撤销并解锁",
+      "pickedToast": "已确认实拣：{sku}",
+      "allPicked": "全部已拣，去 ② 称重",
+      "pickedListTitle": "已实拣",
+      "noPickedYet": "暂无已实拣明细"
     },
     "payments": {
       "title": "付款记录",

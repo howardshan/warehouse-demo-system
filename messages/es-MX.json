@@ -997,7 +997,11 @@
       "colCustomer": "Cliente",
       "colActions": "Acciones",
       "withdraw": "Retirar",
-      "confirmWithdraw": "Confirmar retiro y desbloqueo"
+      "confirmWithdraw": "Confirmar retiro y desbloqueo",
+      "pickedToast": "Surtido: {sku}",
+      "allPicked": "Todo surtido — ir a ② Pesar",
+      "pickedListTitle": "Surtido",
+      "noPickedYet": "Nada surtido aún"
     },
     "payments": {
       "title": "Pagos",
