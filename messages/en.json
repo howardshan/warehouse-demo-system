@@ -997,7 +997,11 @@
       "colCustomer": "Customer",
       "colActions": "Actions",
       "withdraw": "Withdraw",
-      "confirmWithdraw": "Confirm withdraw & unlock"
+      "confirmWithdraw": "Confirm withdraw & unlock",
+      "pickedToast": "Picked: {sku}",
+      "allPicked": "All picked — go to ② Weigh",
+      "pickedListTitle": "Picked",
+      "noPickedYet": "Nothing picked yet"
     },
     "payments": {
       "title": "Payments",
