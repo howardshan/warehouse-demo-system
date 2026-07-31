@@ -1001,7 +1001,10 @@
       "pickedToast": "Surtido: {sku}",
       "allPicked": "Todo surtido — ir a ② Pesar",
       "pickedListTitle": "Surtido",
-      "noPickedYet": "Nada surtido aún"
+      "noPickedYet": "Nada surtido aún",
+      "weighedToast": "Pesado: {sku} {w} lb",
+      "allWeighed": "Todo pesado — ir a Envío",
+      "toWeighCount": "{n} por pesar"
     },
     "payments": {
       "title": "Pagos",

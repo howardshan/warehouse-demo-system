@@ -1001,7 +1001,10 @@
       "pickedToast": "Picked: {sku}",
       "allPicked": "All picked — go to ② Weigh",
       "pickedListTitle": "Picked",
-      "noPickedYet": "Nothing picked yet"
+      "noPickedYet": "Nothing picked yet",
+      "weighedToast": "Weighed: {sku} {w} lb",
+      "allWeighed": "All weighed — go to Shipping",
+      "toWeighCount": "{n} to weigh"
     },
     "payments": {
       "title": "Payments",
