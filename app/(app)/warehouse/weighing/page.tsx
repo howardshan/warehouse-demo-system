@@ -23,7 +23,7 @@ export default async function WeighingPage() {
         const tote = line.totes as unknown as { code: string } | null;
         return <form key={line.id} action={recordWeight.bind(null, line.id)} className="grid items-end gap-3 rounded border border-stone-100 p-4 md:grid-cols-5">
           <div className="md:col-span-2"><div className="font-medium">{soLine.products.sku} · {soLine.products.name}</div><div className="text-xs text-stone-500">{pick.pick_number} · {t(messages, "pg.warehouse.unitsSuffix").replace("{x}", String(line.picked_units))}</div></div>
-          <div><Label>{t(messages, "pg.warehouse.toteCode")}</Label><Input name="tote_id" defaultValue={line.tote_id ?? ""} placeholder={tote?.code ?? t(messages, "pg.warehouse.scanToteCode")} required /></div>
+          <div><Label>{t(messages, "pg.warehouse.toteCode")}</Label><Input name="tote_id" defaultValue={tote?.code ?? ""} placeholder={t(messages, "pg.warehouse.scanToteCode")} required /></div>
           <div><Label>{t(messages, "pg.warehouse.actualWeightLb")}</Label><Input name="actual_weight_lb" type="number" min="0" step="0.01" defaultValue={line.actual_weight_lb ?? ""} required /></div>
           <Button type="submit">{t(messages, "pg.warehouse.confirmWeigh")}</Button>
         </form>;
