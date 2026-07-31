@@ -1001,7 +1001,10 @@
       "pickedToast": "已确认实拣：{sku}",
       "allPicked": "全部已拣，去 ② 称重",
       "pickedListTitle": "已实拣",
-      "noPickedYet": "暂无已实拣明细"
+      "noPickedYet": "暂无已实拣明细",
+      "weighedToast": "已称重：{sku} {w} lb",
+      "allWeighed": "全部已称重，去 发运 / 装车",
+      "toWeighCount": "待称 {n} 项"
     },
     "payments": {
       "title": "付款记录",
