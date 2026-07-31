@@ -1004,7 +1004,13 @@
       "noPickedYet": "Nothing picked yet",
       "weighedToast": "Weighed: {sku} {w} lb",
       "allWeighed": "All weighed — go to Shipping",
-      "toWeighCount": "{n} to weigh"
+      "toWeighCount": "{n} to weigh",
+      "colProduct": "Product",
+      "colBatch": "Batch",
+      "colQtyWeight": "Qty / Weight",
+      "colUnitPrice": "Unit price",
+      "colLineTotal": "Subtotal",
+      "orderNoLabel": "Order"
     },
     "payments": {
       "title": "Payments",

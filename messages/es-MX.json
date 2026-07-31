@@ -1004,7 +1004,13 @@
       "noPickedYet": "Nada surtido aún",
       "weighedToast": "Pesado: {sku} {w} lb",
       "allWeighed": "Todo pesado — ir a Envío",
-      "toWeighCount": "{n} por pesar"
+      "toWeighCount": "{n} por pesar",
+      "colProduct": "Producto",
+      "colBatch": "Lote",
+      "colQtyWeight": "Cant. / Peso",
+      "colUnitPrice": "Precio unit.",
+      "colLineTotal": "Subtotal",
+      "orderNoLabel": "Pedido"
     },
     "payments": {
       "title": "Pagos",

@@ -1004,7 +1004,13 @@
       "noPickedYet": "暂无已实拣明细",
       "weighedToast": "已称重：{sku} {w} lb",
       "allWeighed": "全部已称重，去 发运 / 装车",
-      "toWeighCount": "待称 {n} 项"
+      "toWeighCount": "待称 {n} 项",
+      "colProduct": "商品",
+      "colBatch": "批号",
+      "colQtyWeight": "数量 / 实重",
+      "colUnitPrice": "单价",
+      "colLineTotal": "小计",
+      "orderNoLabel": "订单号"
     },
     "payments": {
       "title": "付款记录",
