@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getRequestLocale } from "@/app/actions/i18n";
@@ -6,7 +7,11 @@ import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { getDictionary, t } from "@/lib/i18n/dictionaries";
 import { statusLabel } from "@/lib/i18n/status";
 import { formatMoney } from "@/lib/utils";
-import { IssuePoButton, PoLineForm } from "../../purchasing-forms";
+import {
+  DeletePoLineButton,
+  IssuePoButton,
+  PoLineForm,
+} from "../../purchasing-forms";
 
 export default async function PurchaseOrderDetailPage({
   params,
@@ -72,10 +77,21 @@ export default async function PurchaseOrderDetailPage({
         family_name: family?.name ?? null,
         family_purchase_uom: family?.purchase_uom ?? null,
       };
-    });
+    })
+    // 在服务端排序一次，客户端按此顺序渲染，避免 hydration 失配
+    .sort((a, b) =>
+      (a.family_name ?? a.name).localeCompare(b.family_name ?? b.name, "zh-Hans-CN"),
+    );
 
   return (
     <div className="space-y-6">
+      <Link
+        href="/purchasing/pos"
+        className="inline-flex w-fit items-center gap-1.5 rounded-md border border-stone-200 bg-white px-3 py-1.5 text-sm font-medium text-stone-600 transition-colors hover:border-stone-300 hover:bg-stone-50 hover:text-stone-900"
+      >
+        <span aria-hidden>←</span>
+        {t(messages, "pg.purchasing.backToPos")}
+      </Link>
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold">{order.po_number}</h1>
@@ -111,58 +127,118 @@ export default async function PurchaseOrderDetailPage({
       )}
 
       <div className="overflow-hidden rounded-lg border border-stone-200 bg-white">
-        <table className="w-full text-left text-sm">
-          <thead className="bg-stone-50 text-stone-500">
-            <tr>
-              <th className="px-4 py-3">{t(messages, "pg.purchasing.lineNo")}</th>
-              <th className="px-4 py-3">{t(messages, "pg.purchasing.productSku")}</th>
-              <th className="px-4 py-3">{t(messages, "pg.purchasing.qty")}</th>
-              <th className="px-4 py-3">{t(messages, "pg.purchasing.unit")}</th>
-              <th className="px-4 py-3">{t(messages, "pg.purchasing.estimatedWeightLb")}</th>
-              <th className="px-4 py-3">{t(messages, "pg.purchasing.unitPrice")}</th>
-              <th className="px-4 py-3">{t(messages, "pg.purchasing.received")}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {(lines ?? []).map((line) => {
-              const product = Array.isArray(line.products)
-                ? line.products[0]
-                : line.products;
-              return (
-                <tr key={line.id} className="border-t border-stone-100">
-                  <td className="px-4 py-3">{line.line_no}</td>
-                  <td className="px-4 py-3">
-                    {product?.name}
-                    <div className="font-mono text-xs text-stone-400">
-                      {product?.sku}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 tabular-nums">{line.qty_units}</td>
-                  <td className="px-4 py-3">{product?.ordering_uom}</td>
-                  <td className="px-4 py-3 tabular-nums">
-                    {line.estimated_weight_lb ?? "—"}
-                  </td>
-                  <td className="px-4 py-3 tabular-nums">
-                    {formatMoney(Number(line.unit_cost))}
-                    {product?.pricing_uom ? ` / ${product.pricing_uom}` : ""}
-                  </td>
-                  <td className="px-4 py-3 tabular-nums">
-                    {line.received_units}
+        <div className="flex items-center justify-between border-b border-stone-200 bg-stone-50 px-4 py-3">
+          <h2 className="font-semibold">
+            {t(messages, "pg.purchasing.linesTitle")}
+          </h2>
+          <span className="rounded-full bg-stone-200/70 px-2.5 py-0.5 text-xs font-medium text-stone-600">
+            {t(messages, "pg.purchasing.linesCount").replace(
+              "{n}",
+              String(lines?.length ?? 0),
+            )}
+          </span>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[720px] text-left text-sm">
+            <thead className="text-xs uppercase tracking-wide text-stone-500">
+              <tr className="border-b border-stone-200">
+                <th className="px-4 py-3 font-medium">
+                  {t(messages, "pg.purchasing.lineNo")}
+                </th>
+                <th className="px-4 py-3 font-medium">
+                  {t(messages, "pg.purchasing.productSku")}
+                </th>
+                <th className="px-4 py-3 text-right font-medium">
+                  {t(messages, "pg.purchasing.qty")}
+                </th>
+                <th className="px-4 py-3 font-medium">
+                  {t(messages, "pg.purchasing.unit")}
+                </th>
+                <th className="px-4 py-3 text-right font-medium">
+                  {t(messages, "pg.purchasing.estimatedWeightLb")}
+                </th>
+                <th className="px-4 py-3 text-right font-medium">
+                  {t(messages, "pg.purchasing.unitPrice")}
+                </th>
+                <th className="px-4 py-3 text-right font-medium">
+                  {t(messages, "pg.purchasing.received")}
+                </th>
+                {order.status === "draft" && (
+                  <th className="px-4 py-3 text-right font-medium">
+                    {t(messages, "pg.purchasing.actions")}
+                  </th>
+                )}
+              </tr>
+            </thead>
+            <tbody>
+              {(lines ?? []).map((line) => {
+                const product = Array.isArray(line.products)
+                  ? line.products[0]
+                  : line.products;
+                return (
+                  <tr
+                    key={line.id}
+                    className="border-b border-stone-100 last:border-0 even:bg-stone-50/40"
+                  >
+                    <td className="px-4 py-3 text-stone-400">{line.line_no}</td>
+                    <td className="px-4 py-3">
+                      <div className="font-medium text-stone-800">
+                        {product?.name}
+                      </div>
+                      <div className="font-mono text-xs text-stone-400">
+                        {product?.sku}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-right tabular-nums">
+                      {line.qty_units}
+                    </td>
+                    <td className="px-4 py-3 text-stone-500">
+                      {product?.ordering_uom}
+                    </td>
+                    <td className="px-4 py-3 text-right tabular-nums">
+                      {line.estimated_weight_lb ?? "—"}
+                    </td>
+                    <td className="px-4 py-3 text-right tabular-nums">
+                      {formatMoney(Number(line.unit_cost))}
+                      {product?.pricing_uom ? (
+                        <span className="text-stone-400">{` / ${product.pricing_uom}`}</span>
+                      ) : (
+                        ""
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-right tabular-nums">
+                      {line.received_units}
+                    </td>
+                    {order.status === "draft" && (
+                      <td className="px-4 py-3 text-right">
+                        <DeletePoLineButton poLineId={line.id} poId={id} />
+                      </td>
+                    )}
+                  </tr>
+                );
+              })}
+              {!lines?.length && (
+                <tr>
+                  <td
+                    colSpan={order.status === "draft" ? 8 : 7}
+                    className="px-4 py-10 text-center text-stone-400"
+                  >
+                    {t(messages, "pg.purchasing.noLines")}
                   </td>
                 </tr>
-              );
-            })}
-            {!lines?.length && (
-              <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-stone-400">
-                  {t(messages, "pg.purchasing.noLines")}
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
-      {order.status === "draft" && <IssuePoButton poId={id} />}
+      {order.status === "draft" && (
+        <div className="flex flex-col gap-3 rounded-lg border border-stone-200 bg-stone-50 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm text-stone-500">
+            {t(messages, "pg.purchasing.issueHint")}
+          </p>
+          <IssuePoButton poId={id} />
+        </div>
+      )}
     </div>
   );
 }
