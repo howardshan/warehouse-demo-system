@@ -605,6 +605,13 @@
       "unitPrice": "Unit price",
       "received": "Received",
       "noLines": "No lines added yet",
+      "backToPos": "Back to purchase orders",
+      "deleteLine": "Delete",
+      "deleteLineConfirm": "Delete this line?",
+      "lineDeleted": "Line deleted",
+      "linesTitle": "Line items",
+      "linesCount": "{n} line(s)",
+      "issueHint": "After issuing, the PO locks and enters receiving",
       "priceAlerts": "Price increase alert",
       "priceAlertsDesc": "One-click reprice adjusts the current price by the old/new cost ratio; rule 1 ensures historical prices are never overwritten.",
       "previousCost": "Previous cost",
@@ -1004,7 +1011,13 @@
       "noPickedYet": "Nothing picked yet",
       "weighedToast": "Weighed: {sku} {w} lb",
       "allWeighed": "All weighed — go to Shipping",
-      "toWeighCount": "{n} to weigh"
+      "toWeighCount": "{n} to weigh",
+      "colProduct": "Product",
+      "colBatch": "Batch",
+      "colQtyWeight": "Qty / Weight",
+      "colUnitPrice": "Unit price",
+      "colLineTotal": "Subtotal",
+      "orderNoLabel": "Order"
     },
     "payments": {
       "title": "Payments",

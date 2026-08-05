@@ -114,6 +114,32 @@ export async function addPoLine(purchaseOrderId: string, input: PoLineInput) {
   }
 }
 
+export async function deletePoLine(
+  poLineId: string,
+  purchaseOrderId: string,
+) {
+  try {
+    const { supabase } = await requireUser();
+    const { data: po, error: poError } = await supabase
+      .from("purchase_orders")
+      .select("status")
+      .eq("id", purchaseOrderId)
+      .single();
+    if (poError) throw poError;
+    if (po.status !== "draft") throw new Error("只能编辑草稿采购单");
+    const { error } = await supabase
+      .from("po_lines")
+      .delete()
+      .eq("id", poLineId)
+      .eq("purchase_order_id", purchaseOrderId);
+    if (error) throw error;
+    revalidatePath(`/purchasing/pos/${purchaseOrderId}`);
+    return { ok: true as const };
+  } catch (error) {
+    return failure(error);
+  }
+}
+
 export async function issuePO(purchaseOrderId: string) {
   try {
     const { supabase } = await requireUser();

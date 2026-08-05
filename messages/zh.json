@@ -605,6 +605,13 @@
       "unitPrice": "单价",
       "received": "已收",
       "noLines": "尚未添加明细",
+      "backToPos": "返回采购订单",
+      "deleteLine": "删除",
+      "deleteLineConfirm": "确认删除该明细行？",
+      "lineDeleted": "已删除明细行",
+      "linesTitle": "采购明细",
+      "linesCount": "共 {n} 行",
+      "issueHint": "下达后采购单锁定，进入收货流程",
       "priceAlerts": "成本涨价提醒",
       "priceAlertsDesc": "一键调价按新旧成本比例调整当前售价；铁律 1 保证历史成交价不被覆盖。",
       "previousCost": "原成本",
@@ -1004,7 +1011,13 @@
       "noPickedYet": "暂无已实拣明细",
       "weighedToast": "已称重：{sku} {w} lb",
       "allWeighed": "全部已称重，去 发运 / 装车",
-      "toWeighCount": "待称 {n} 项"
+      "toWeighCount": "待称 {n} 项",
+      "colProduct": "商品",
+      "colBatch": "批号",
+      "colQtyWeight": "数量 / 实重",
+      "colUnitPrice": "单价",
+      "colLineTotal": "小计",
+      "orderNoLabel": "订单号"
     },
     "payments": {
       "title": "付款记录",

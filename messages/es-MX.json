@@ -605,6 +605,13 @@
       "unitPrice": "Precio unitario",
       "received": "Recibido",
       "noLines": "Sin líneas agregadas",
+      "backToPos": "Volver a órdenes de compra",
+      "deleteLine": "Eliminar",
+      "deleteLineConfirm": "¿Eliminar esta línea?",
+      "lineDeleted": "Línea eliminada",
+      "linesTitle": "Líneas de compra",
+      "linesCount": "{n} línea(s)",
+      "issueHint": "Al emitir, la OC se bloquea y pasa a recepción",
       "priceAlerts": "Alerta de aumento",
       "priceAlertsDesc": "El reajuste con un clic ajusta el precio actual según la proporción de costo anterior/nuevo; la regla 1 garantiza que los precios históricos no se sobrescriban.",
       "previousCost": "Costo anterior",
@@ -1004,7 +1011,13 @@
       "noPickedYet": "Nada surtido aún",
       "weighedToast": "Pesado: {sku} {w} lb",
       "allWeighed": "Todo pesado — ir a Envío",
-      "toWeighCount": "{n} por pesar"
+      "toWeighCount": "{n} por pesar",
+      "colProduct": "Producto",
+      "colBatch": "Lote",
+      "colQtyWeight": "Cant. / Peso",
+      "colUnitPrice": "Precio unit.",
+      "colLineTotal": "Subtotal",
+      "orderNoLabel": "Pedido"
     },
     "payments": {
       "title": "Pagos",

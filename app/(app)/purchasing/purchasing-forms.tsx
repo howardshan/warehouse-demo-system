@@ -1,11 +1,12 @@
 "use client";
 
-import { FormEvent, useMemo, useRef, useState, useTransition } from "react";
+import { FormEvent, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   addPoLine,
   createGoodsReceipt,
   createPO,
+  deletePoLine,
   dismissAlert,
   issuePO,
   postGoodsReceipt,
@@ -97,14 +98,9 @@ export function PoLineForm({
   const [productId, setProductId] = useState("");
   const router = useRouter();
 
-  // 采购：只展示可采购 SKU（每原产品通常一个单位）
-  const purchaseProducts = useMemo(
-    () =>
-      [...products].sort((a, b) =>
-        (a.family_name ?? a.name).localeCompare(b.family_name ?? b.name),
-      ),
-    [products],
-  );
+  // 采购：只展示可采购 SKU；排序已在服务端完成，客户端不再重排，避免 localeCompare
+  // 在 Node 与浏览器下对中文名排序不一致导致的 hydration 失配。
+  const purchaseProducts = products;
   const selected =
     purchaseProducts.find((p) => p.id === productId) ?? null;
 
@@ -193,8 +189,10 @@ export function PoLineForm({
         />
         <p className="mt-1 text-xs text-stone-500">{priceHint}</p>
       </div>
-      <div className="md:col-span-5 space-y-2">
-        <FormMessage error={error} />
+      <div className="flex flex-wrap items-center gap-3 md:col-span-5">
+        <div className="flex-1">
+          <FormMessage error={error} />
+        </div>
         <Button type="submit" disabled={pending || !selected}>
           {pending ? t("pg.purchasing.addingLine") : t("pg.purchasing.addLine")}
         </Button>
@@ -209,6 +207,42 @@ export function IssuePoButton({ poId }: { poId: string }) {
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   return <div className="space-y-2"><Button disabled={pending} onClick={() => start(async () => { const result = await issuePO(poId); if (!result.ok) setError(result.error); else router.refresh(); })}>{pending ? t("pg.purchasing.issuingPo") : t("pg.purchasing.issuePo")}</Button><FormMessage error={error} /></div>;
+}
+
+export function DeletePoLineButton({
+  poLineId,
+  poId,
+}: {
+  poLineId: string;
+  poId: string;
+}) {
+  const { t } = useI18n();
+  const [pending, start] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
+  return (
+    <div className="flex flex-col items-start gap-1">
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        disabled={pending}
+        className="text-red-700 hover:bg-red-50"
+        onClick={() => {
+          if (!window.confirm(t("pg.purchasing.deleteLineConfirm"))) return;
+          setError(null);
+          start(async () => {
+            const result = await deletePoLine(poLineId, poId);
+            if (!result.ok) setError(result.error);
+            else router.refresh();
+          });
+        }}
+      >
+        {pending ? "…" : t("pg.purchasing.deleteLine")}
+      </Button>
+      {error && <span className="text-xs text-red-700">{error}</span>}
+    </div>
+  );
 }
 
 export function StartReceivingForm({ purchaseOrders }: { purchaseOrders: Option[] }) {
