@@ -226,6 +226,8 @@
       "colQuarantineLocation": "Quarantine location",
       "colWeight": "Weight",
       "colBatchStatus": "Batch status",
+      "adjustAction": "Adjust",
+      "adjSaved": "Stock adjusted",
       "emptyQuarantine": "No quarantine inventory",
       "repackTitle": "Repack orders",
       "repackDesc": "Both input and output keep dual units; completing generates new child batches.",
@@ -1131,6 +1133,10 @@
       "orderDate": "Order date",
       "printDelivery": "Print delivery note",
       "printInvoice": "Print invoice",
+      "searchPlaceholder": "Search order no / customer",
+      "statusAll": "All statuses",
+      "resultCount": "Showing {m} of {n}",
+      "linesTitle": "Order lines",
       "back": "All orders",
       "status": "Status"
     }

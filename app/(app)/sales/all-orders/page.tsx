@@ -1,9 +1,8 @@
-import Link from "next/link";
-import { Badge } from "@/components/ui/badge";
 import { createClient } from "@/lib/supabase/server";
 import { getSessionAccess } from "@/lib/auth/access";
 import { getRequestLocale } from "@/app/actions/i18n";
 import { getDictionary, t } from "@/lib/i18n/dictionaries";
+import { AllOrdersBrowser, type AllOrderRow } from "./all-orders-browser";
 
 export default async function AllOrdersPage() {
   const access = await getSessionAccess();
@@ -14,7 +13,7 @@ export default async function AllOrdersPage() {
   let q = supabase
     .from("sales_orders")
     .select(
-      "id, so_number, customer_name_snapshot, order_date, created_at, delivery_note_printed_at, invoice_printed_at",
+      "id, so_number, customer_name_snapshot, status, order_date, requested_delivery_date, created_at, delivery_note_printed_at, invoice_printed_at",
     )
     .order("order_date", { ascending: false })
     .order("created_at", { ascending: false });
@@ -22,14 +21,40 @@ export default async function AllOrdersPage() {
   if (access.role !== "admin" && access.user) {
     q = q.eq("sales_rep_id", access.user.id);
   }
-  const { data: orders } = await q;
+  const [{ data: orders }, { data: payRows }] = await Promise.all([
+    q,
+    supabase
+      .from("v_sl_payment")
+      .select("sales_order_id, paid_amount, balance_amount"),
+  ]);
 
-  const printedBadge = (printedAt: string | null) =>
-    printedAt ? (
-      <Badge tone="ok">{t(messages, "pg.allOrders.printed")}</Badge>
-    ) : (
-      <Badge tone="warn">{t(messages, "pg.allOrders.notPrinted")}</Badge>
-    );
+  // 付款状态按发运单聚合到订单
+  const payAgg = new Map<string, { paid: number; balance: number }>();
+  for (const r of payRows ?? []) {
+    const a = payAgg.get(r.sales_order_id) ?? { paid: 0, balance: 0 };
+    a.paid += Number(r.paid_amount);
+    a.balance += Number(r.balance_amount);
+    payAgg.set(r.sales_order_id, a);
+  }
+  const payStatus = (id: string): AllOrderRow["payStatus"] => {
+    const a = payAgg.get(id);
+    if (!a) return null;
+    if (a.balance <= 0) return "paid";
+    if (a.paid > 0) return "partial";
+    return "unpaid";
+  };
+
+  const rows: AllOrderRow[] = (orders ?? []).map((o) => ({
+    id: o.id,
+    so_number: o.so_number,
+    customer: o.customer_name_snapshot,
+    orderDate: o.order_date,
+    deliveryDate: o.requested_delivery_date ?? "—",
+    status: o.status,
+    payStatus: payStatus(o.id),
+    deliveryPrinted: !!o.delivery_note_printed_at,
+    invoicePrinted: !!o.invoice_printed_at,
+  }));
 
   return (
     <div className="space-y-6">
@@ -41,51 +66,7 @@ export default async function AllOrdersPage() {
           {t(messages, "pg.allOrders.subtitle")}
         </p>
       </div>
-
-      <div className="overflow-hidden rounded-lg border border-stone-200 bg-white">
-        <table className="w-full text-left text-sm">
-          <thead className="bg-stone-50 text-stone-500">
-            <tr>
-              <th className="px-4 py-3">{t(messages, "pg.allOrders.colOrderNo")}</th>
-              <th className="px-4 py-3">{t(messages, "pg.allOrders.colCustomer")}</th>
-              <th className="px-4 py-3">{t(messages, "pg.allOrders.colOrderDate")}</th>
-              <th className="px-4 py-3">{t(messages, "pg.allOrders.deliveryNote")}</th>
-              <th className="px-4 py-3">{t(messages, "pg.allOrders.invoice")}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {(orders ?? []).map((o) => (
-              <tr key={o.id} className="border-t border-stone-100">
-                <td className="px-4 py-3">
-                  <Link
-                    href={`/sales/all-orders/${o.id}`}
-                    className="font-mono text-teal-800 hover:underline"
-                  >
-                    {o.so_number}
-                  </Link>
-                </td>
-                <td className="px-4 py-3">{o.customer_name_snapshot}</td>
-                <td className="px-4 py-3 tabular-nums text-stone-600">
-                  {o.order_date}
-                </td>
-                <td className="px-4 py-3">
-                  {printedBadge(o.delivery_note_printed_at)}
-                </td>
-                <td className="px-4 py-3">
-                  {printedBadge(o.invoice_printed_at)}
-                </td>
-              </tr>
-            ))}
-            {!orders?.length && (
-              <tr>
-                <td colSpan={5} className="px-4 py-6 text-center text-stone-400">
-                  {t(messages, "pg.allOrders.empty")}
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+      <AllOrdersBrowser orders={rows} />
     </div>
   );
 }

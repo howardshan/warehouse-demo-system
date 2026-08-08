@@ -226,6 +226,8 @@
       "colQuarantineLocation": "隔离位",
       "colWeight": "重量",
       "colBatchStatus": "批次状态",
+      "adjustAction": "调整",
+      "adjSaved": "库存已调整",
       "emptyQuarantine": "隔离区暂无库存",
       "repackTitle": "重包工单",
       "repackDesc": "投入与产出均保留双单位；完成后产出新子批次。",
@@ -1131,6 +1133,10 @@
       "orderDate": "下单日期",
       "printDelivery": "打印下货单",
       "printInvoice": "打印 Invoice",
+      "searchPlaceholder": "搜索订单号 / 客户",
+      "statusAll": "全部状态",
+      "resultCount": "显示 {m} / 共 {n}",
+      "linesTitle": "订单明细",
       "back": "所有订单",
       "status": "状态"
     }

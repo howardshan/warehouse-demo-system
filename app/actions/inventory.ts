@@ -20,11 +20,18 @@ async function requireUser() {
   return { supabase };
 }
 
+function errorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  // Supabase/Postgres 错误是普通对象（非 Error 实例），需手动取 message，
+  // 否则 String(error) 会得到无意义的 "[object Object]"
+  if (error && typeof error === "object" && "message" in error) {
+    return String((error as { message: unknown }).message);
+  }
+  return String(error);
+}
+
 function failure(error: unknown) {
-  return {
-    ok: false as const,
-    error: error instanceof Error ? error.message : String(error),
-  };
+  return { ok: false as const, error: errorMessage(error) };
 }
 
 export async function createReplenishmentTask(input: ReplenishmentInput) {
