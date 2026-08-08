@@ -4,7 +4,7 @@ import { listAtp, listStock } from "@/app/actions/inventory";
 import { createClient } from "@/lib/supabase/server";
 import { getRequestLocale } from "@/app/actions/i18n";
 import { getDictionary, t } from "@/lib/i18n/dictionaries";
-import { Badge } from "@/components/ui/badge";
+import { StockDetailRows, type DetailRow } from "./stock-detail-rows";
 
 function one<T>(v: unknown): T | null {
   const x = Array.isArray(v) ? v[0] : v;
@@ -21,19 +21,44 @@ export default async function StockDetailPage({
   const messages = getDictionary(locale);
   const supabase = await createClient();
   const [{ data: product }, stock, atp] = await Promise.all([
-    supabase.from("products").select("id, sku, name").eq("id", id).maybeSingle(),
+    supabase
+      .from("products")
+      .select("id, sku, name, is_catch_weight")
+      .eq("id", id)
+      .maybeSingle(),
     listStock(),
     listAtp(),
   ]);
   if (!product) notFound();
 
-  const rows = stock.filter((row) => {
-    const batch = one<{ products: unknown }>(row.batches);
-    const p = one<{ id: string }>(batch?.products);
-    return p?.id === id;
-  });
-  const atpRow = atp.find((a) => a.product_id === id);
+  const rows: DetailRow[] = stock
+    .filter((row) => {
+      const batch = one<{ products: unknown }>(row.batches);
+      const p = one<{ id: string }>(batch?.products);
+      return p?.id === id;
+    })
+    .map((row) => {
+      const location = one<{ code: string; type: string }>(row.locations);
+      const batch = one<{
+        lot_no: string;
+        expiry_date: string | null;
+        status: string;
+      }>(row.batches);
+      return {
+        stockId: row.id,
+        locationCode: location?.code ?? "—",
+        locationType: location?.type ?? "—",
+        lotNo: batch?.lot_no ?? "—",
+        expiry: batch?.expiry_date ?? null,
+        status: batch?.status ?? "—",
+        qtyUnits: Number(row.qty_units),
+        qtyWeight: Number(row.qty_weight_lb),
+        allocatedUnits: Number(row.allocated_units),
+        allocatedWeight: Number(row.allocated_weight_lb),
+      };
+    });
 
+  const atpRow = atp.find((a) => a.product_id === id);
   const summary = [
     {
       label: t(messages, "pg.inventory.colOnHandUnits"),
@@ -87,89 +112,10 @@ export default async function StockDetailPage({
         ))}
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-stone-200 bg-white">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[720px] text-left text-sm">
-            <thead className="border-b border-stone-200 bg-stone-50 text-xs uppercase tracking-wide text-stone-500">
-              <tr>
-                <th className="px-4 py-3 font-medium">
-                  {t(messages, "pg.inventory.colLocation")}
-                </th>
-                <th className="px-4 py-3 font-medium">
-                  {t(messages, "pg.inventory.colLotExpiry")}
-                </th>
-                <th className="px-4 py-3 font-medium">
-                  {t(messages, "pg.inventory.colBatchStatus")}
-                </th>
-                <th className="px-4 py-3 text-right font-medium">
-                  {t(messages, "pg.inventory.colOnHandUnits")}
-                </th>
-                <th className="px-4 py-3 text-right font-medium">
-                  {t(messages, "pg.inventory.colOnHandWeight")}
-                </th>
-                <th className="px-4 py-3 text-right font-medium">
-                  {t(messages, "pg.inventory.colAllocatedUnits")}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row) => {
-                const location = one<{ code: string; type: string }>(
-                  row.locations,
-                );
-                const batch = one<{
-                  lot_no: string;
-                  expiry_date: string | null;
-                  status: string;
-                }>(row.batches);
-                const onHandWeight = Number(row.qty_weight_lb);
-                return (
-                  <tr
-                    key={row.id}
-                    className="border-b border-stone-100 last:border-0 even:bg-stone-50/40"
-                  >
-                    <td className="px-4 py-3">
-                      <span className="font-mono text-xs">
-                        {location?.code}
-                      </span>{" "}
-                      <Badge className="ml-1">{location?.type}</Badge>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="font-mono text-xs">{batch?.lot_no}</span>
-                      <div className="text-xs text-stone-400">
-                        {batch?.expiry_date ??
-                          t(messages, "pg.inventory.noExpiry")}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <Badge>{batch?.status}</Badge>
-                    </td>
-                    <td className="px-4 py-3 text-right tabular-nums">
-                      {row.qty_units}
-                    </td>
-                    <td className="px-4 py-3 text-right tabular-nums">
-                      {onHandWeight > 0 ? `${row.qty_weight_lb} lb` : "—"}
-                    </td>
-                    <td className="px-4 py-3 text-right tabular-nums">
-                      {row.allocated_units}
-                    </td>
-                  </tr>
-                );
-              })}
-              {!rows.length && (
-                <tr>
-                  <td
-                    colSpan={6}
-                    className="px-4 py-10 text-center text-stone-400"
-                  >
-                    {t(messages, "pg.inventory.stockDetailEmpty")}
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <StockDetailRows
+        rows={rows}
+        isCatchWeight={Boolean(product.is_catch_weight)}
+      />
     </div>
   );
 }

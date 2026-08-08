@@ -226,6 +226,8 @@
       "colQuarantineLocation": "Quarantine location",
       "colWeight": "Weight",
       "colBatchStatus": "Batch status",
+      "adjustAction": "Adjust",
+      "adjSaved": "Stock adjusted",
       "emptyQuarantine": "No quarantine inventory",
       "repackTitle": "Repack orders",
       "repackDesc": "Both input and output keep dual units; completing generates new child batches.",

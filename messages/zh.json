@@ -226,6 +226,8 @@
       "colQuarantineLocation": "隔离位",
       "colWeight": "重量",
       "colBatchStatus": "批次状态",
+      "adjustAction": "调整",
+      "adjSaved": "库存已调整",
       "emptyQuarantine": "隔离区暂无库存",
       "repackTitle": "重包工单",
       "repackDesc": "投入与产出均保留双单位；完成后产出新子批次。",

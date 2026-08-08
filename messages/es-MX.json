@@ -226,6 +226,8 @@
       "colQuarantineLocation": "Ubicación de cuarentena",
       "colWeight": "Peso",
       "colBatchStatus": "Estado del lote",
+      "adjustAction": "Ajustar",
+      "adjSaved": "Existencias ajustadas",
       "emptyQuarantine": "Sin inventario en cuarentena",
       "repackTitle": "Órdenes de reempaque",
       "repackDesc": "Tanto la entrada como la salida conservan unidades duales; al completar se generan nuevos sublotes.",
