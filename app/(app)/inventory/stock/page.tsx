@@ -2,13 +2,70 @@ import Link from "next/link";
 import { listAtp, listStock } from "@/app/actions/inventory";
 import { getRequestLocale } from "@/app/actions/i18n";
 import { getDictionary, t } from "@/lib/i18n/dictionaries";
-import { Badge } from "@/components/ui/badge";
+import { StockBrowser, type StockRow } from "./stock-browser";
+
+function one<T>(v: unknown): T | null {
+  const x = Array.isArray(v) ? v[0] : v;
+  return (x ?? null) as T | null;
+}
+
+type Agg = StockRow & { locations: Set<string> };
 
 export default async function StockPage() {
   const locale = await getRequestLocale();
   const messages = getDictionary(locale);
   const [stock, atp] = await Promise.all([listStock(), listAtp()]);
   const atpMap = new Map(atp.map((row) => [row.product_id, row]));
+
+  // 按商品聚合：在手 / 占用求和、库位去重计数、温区取样，ATP 取商品级
+  const map = new Map<string, Agg>();
+  for (const row of stock) {
+    const batch = one<{ products: unknown }>(row.batches);
+    const product = one<{ id: string; sku: string; name: string }>(
+      batch?.products,
+    );
+    if (!product) continue;
+    const location = one<{ code: string; temp_zone: string }>(row.locations);
+    const r =
+      map.get(product.id) ??
+      ({
+        productId: product.id,
+        sku: product.sku,
+        name: product.name,
+        onHandUnits: 0,
+        onHandWeight: 0,
+        allocatedUnits: 0,
+        locationCount: 0,
+        tempZone: null,
+        atpUnits: null,
+        atpWeight: null,
+        locations: new Set<string>(),
+      } satisfies Agg);
+    r.onHandUnits += Number(row.qty_units);
+    r.onHandWeight += Number(row.qty_weight_lb);
+    r.allocatedUnits += Number(row.allocated_units);
+    if (location?.code) r.locations.add(location.code);
+    if (!r.tempZone && location?.temp_zone) r.tempZone = location.temp_zone;
+    map.set(product.id, r);
+  }
+
+  const rows: StockRow[] = [...map.values()]
+    .map((r) => {
+      const a = atpMap.get(r.productId);
+      return {
+        productId: r.productId,
+        sku: r.sku,
+        name: r.name,
+        onHandUnits: r.onHandUnits,
+        onHandWeight: r.onHandWeight,
+        allocatedUnits: r.allocatedUnits,
+        locationCount: r.locations.size,
+        tempZone: r.tempZone,
+        atpUnits: a ? Number(a.atp_units) : null,
+        atpWeight: a ? Number(a.atp_weight_lb) : null,
+      };
+    })
+    .sort((a, b) => a.name.localeCompare(b.name, "zh-Hans-CN"));
 
   return (
     <div className="space-y-6">
@@ -29,83 +86,7 @@ export default async function StockPage() {
         </Link>
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-stone-200 bg-white">
-        <table className="w-full text-left text-sm">
-          <thead className="bg-stone-50 text-stone-500">
-            <tr>
-              <th className="px-4 py-3">{t(messages, "pg.inventory.colProduct")}</th>
-              <th className="px-4 py-3">{t(messages, "pg.inventory.colLocation")}</th>
-              <th className="px-4 py-3">{t(messages, "pg.inventory.colLotExpiry")}</th>
-              <th className="px-4 py-3">{t(messages, "pg.inventory.colOnHandUnits")}</th>
-              <th className="px-4 py-3">{t(messages, "pg.inventory.colOnHandWeight")}</th>
-              <th className="px-4 py-3">{t(messages, "pg.inventory.colAllocatedUnits")}</th>
-              <th className="px-4 py-3">{t(messages, "pg.inventory.colAtpUnits")}</th>
-              <th className="px-4 py-3">{t(messages, "pg.inventory.colAtpWeight")}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {stock.map((row) => {
-              const location = Array.isArray(row.locations)
-                ? row.locations[0]
-                : row.locations;
-              const batch = Array.isArray(row.batches)
-                ? row.batches[0]
-                : row.batches;
-              const product =
-                batch &&
-                (Array.isArray(batch.products)
-                  ? batch.products[0]
-                  : batch.products);
-              const productAtp = product
-                ? atpMap.get(product.id)
-                : undefined;
-              return (
-                <tr key={row.id} className="border-t border-stone-100">
-                  <td className="px-4 py-3">
-                    {product?.name}
-                    <div className="font-mono text-xs text-stone-400">
-                      {product?.sku}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className="font-mono text-xs">{location?.code}</span>{" "}
-                    <Badge className="ml-1">{location?.type}</Badge>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className="font-mono text-xs">{batch?.lot_no}</span>
-                    <div className="text-xs text-stone-400">
-                      {batch?.expiry_date ?? t(messages, "pg.inventory.noExpiry")}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 tabular-nums">{row.qty_units}</td>
-                  <td className="px-4 py-3 tabular-nums">
-                    {row.qty_weight_lb} lb
-                  </td>
-                  <td className="px-4 py-3 tabular-nums">
-                    {row.allocated_units}
-                  </td>
-                  <td className="px-4 py-3 tabular-nums">
-                    {productAtp?.atp_units ?? "—"}
-                  </td>
-                  <td className="px-4 py-3 tabular-nums">
-                    {productAtp?.atp_weight_lb ?? "—"}
-                  </td>
-                </tr>
-              );
-            })}
-            {!stock.length && (
-              <tr>
-                <td
-                  colSpan={8}
-                  className="px-4 py-8 text-center text-stone-400"
-                >
-                  {t(messages, "pg.inventory.emptyStock")}
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+      <StockBrowser rows={rows} />
     </div>
   );
 }
