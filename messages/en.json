@@ -1131,6 +1131,10 @@
       "orderDate": "Order date",
       "printDelivery": "Print delivery note",
       "printInvoice": "Print invoice",
+      "searchPlaceholder": "Search order no / customer",
+      "statusAll": "All statuses",
+      "resultCount": "Showing {m} of {n}",
+      "linesTitle": "Order lines",
       "back": "All orders",
       "status": "Status"
     }

@@ -1131,6 +1131,10 @@
       "orderDate": "Fecha",
       "printDelivery": "Imprimir nota",
       "printInvoice": "Imprimir factura",
+      "searchPlaceholder": "Buscar N.º de orden / cliente",
+      "statusAll": "Todos los estados",
+      "resultCount": "Mostrando {m} de {n}",
+      "linesTitle": "Líneas de la orden",
       "back": "Todas las órdenes",
       "status": "Estado"
     }

@@ -1131,6 +1131,10 @@
       "orderDate": "下单日期",
       "printDelivery": "打印下货单",
       "printInvoice": "打印 Invoice",
+      "searchPlaceholder": "搜索订单号 / 客户",
+      "statusAll": "全部状态",
+      "resultCount": "显示 {m} / 共 {n}",
+      "linesTitle": "订单明细",
       "back": "所有订单",
       "status": "状态"
     }
