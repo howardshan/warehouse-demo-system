@@ -23,6 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { useI18n } from "@/components/i18n/provider";
+import { useToast } from "@/components/ui/toast";
 
 type Option = { id: string; label: string };
 
@@ -327,6 +328,7 @@ export function BlindReceivingForm({
   status: string;
 }) {
   const { t } = useI18n();
+  const { notify } = useToast();
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
@@ -351,9 +353,12 @@ export function BlindReceivingForm({
     const fd = new FormData(event.currentTarget);
     start(async () => {
       const result = await saveGrLines(receiptId, readLines(fd));
-      if (!result.ok) setError(result.error);
-      else {
+      if (!result.ok) {
+        setError(result.error);
+        notify(result.error, "error");
+      } else {
         setError(null);
+        notify(t("pg.purchasing.blindSaved"));
         router.refresh();
       }
     });
@@ -457,6 +462,7 @@ export function SupplierDeliveryNoteForm({
   supplierDocumentNo: string | null;
 }) {
   const { t } = useI18n();
+  const { notify } = useToast();
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
@@ -473,9 +479,12 @@ export function SupplierDeliveryNoteForm({
       const result = await saveSupplierClaims(receiptId, payload, {
         supplier_document_no: String(fd.get("supplier_document_no") || "") || null,
       });
-      if (!result.ok) setError(result.error);
-      else {
+      if (!result.ok) {
+        setError(result.error);
+        notify(result.error, "error");
+      } else {
         setError(null);
+        notify(t("pg.purchasing.shippingSaved"));
         router.refresh();
       }
     });
@@ -553,6 +562,7 @@ export function SupplierInvoiceForm({
   supplierInvoiceNo: string | null;
 }) {
   const { t } = useI18n();
+  const { notify } = useToast();
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
@@ -572,9 +582,12 @@ export function SupplierInvoiceForm({
       const result = await saveSupplierInvoiceClaims(receiptId, payload, {
         supplier_invoice_no: String(fd.get("supplier_invoice_no") || "") || null,
       });
-      if (!result.ok) setError(result.error);
-      else {
+      if (!result.ok) {
+        setError(result.error);
+        notify(result.error, "error");
+      } else {
         setError(null);
+        notify(t("pg.purchasing.invoiceSaved"));
         router.refresh();
       }
     });
@@ -669,6 +682,7 @@ export function ThreeWayMatchForm({
   status: string;
 }) {
   const { t } = useI18n();
+  const { notify } = useToast();
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
@@ -689,12 +703,21 @@ export function ThreeWayMatchForm({
             const saved = await saveMatchVariances(receiptId, payload);
             if (!saved.ok) {
               setError(saved.error);
+              notify(saved.error, "error");
               return;
             }
             const result = await submitGoodsReceipt(receiptId);
-            if (!result.ok) setError(result.error);
-            else {
+            if (!result.ok) {
+              setError(result.error);
+              notify(result.error, "error");
+            } else {
               setError(null);
+              notify(
+                result.matched
+                  ? t("pg.purchasing.matchOk")
+                  : t("pg.purchasing.matchDiscrepancy"),
+                result.matched ? "success" : "error",
+              );
               router.refresh();
             }
           });
@@ -726,8 +749,13 @@ export function ThreeWayMatchForm({
                     </span>
                   )}
                 </div>
-                {fourWayMismatch && (
+                {fourWayMismatch ? (
                   <p className="mt-1 text-xs text-amber-700">{t("pg.purchasing.documentQtyMismatch")}</p>
+                ) : (
+                  <p className="mt-1 inline-flex items-center gap-1 text-xs text-teal-700">
+                    <span aria-hidden>✓</span>
+                    {t("pg.purchasing.documentQtyMatch")}
+                  </p>
                 )}
                 {line.weightWarning && (
                   <p className="mt-1 text-xs text-amber-700">
@@ -834,8 +862,13 @@ export function ThreeWayMatchForm({
           onClick={() =>
             start(async () => {
               const result = await postGoodsReceipt(receiptId);
-              if (!result.ok) setError(result.error);
-              else router.refresh();
+              if (!result.ok) {
+                setError(result.error);
+                notify(result.error, "error");
+              } else {
+                notify(t("pg.purchasing.posted"));
+                router.refresh();
+              }
             })
           }
         >

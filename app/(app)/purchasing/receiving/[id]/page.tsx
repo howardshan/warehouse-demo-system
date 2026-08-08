@@ -7,6 +7,7 @@ import { getDictionary, t } from "@/lib/i18n/dictionaries";
 import { statusLabel } from "@/lib/i18n/status";
 import { BlindReceivingForm } from "../../purchasing-forms";
 import { ReceivingWorkflowNav } from "../receiving-workflow-nav";
+import { getReceivingProgress } from "../progress";
 
 export default async function BlindReceivingPage({
   params,
@@ -35,6 +36,7 @@ export default async function BlindReceivingPage({
       .order("line_no"),
   ]);
   if (!receipt) notFound();
+  const progress = await getReceivingProgress(id);
   const po = Array.isArray(receipt.purchase_orders)
     ? receipt.purchase_orders[0]
     : receipt.purchase_orders;
@@ -97,7 +99,7 @@ export default async function BlindReceivingPage({
         </Badge>
       </div>
 
-      <ReceivingWorkflowNav receiptId={id} active="blind" />
+      <ReceivingWorkflowNav receiptId={id} active="blind" completed={progress} />
 
       <div className="rounded-md border border-teal-200 bg-teal-50 px-4 py-3 text-sm text-teal-900">
         {t(messages, "pg.receiving.blindHint")}

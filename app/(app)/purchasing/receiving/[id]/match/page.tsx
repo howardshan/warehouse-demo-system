@@ -11,6 +11,7 @@ import {
 } from "@/lib/domain/weight-variance";
 import { ThreeWayMatchForm } from "../../../purchasing-forms";
 import { ReceivingWorkflowNav } from "../../receiving-workflow-nav";
+import { getReceivingProgress } from "../../progress";
 
 export default async function ThreeWayMatchPage({
   params,
@@ -44,6 +45,7 @@ export default async function ThreeWayMatchPage({
         .maybeSingle(),
     ]);
   if (!receipt) notFound();
+  const progress = await getReceivingProgress(id);
   const po = Array.isArray(receipt.purchase_orders)
     ? receipt.purchase_orders[0]
     : receipt.purchase_orders;
@@ -110,8 +112,10 @@ export default async function ThreeWayMatchPage({
             {t(messages, "pg.receiving.stepMatch")} {receipt.gr_number}
           </h1>
           <p className="mt-1 text-sm text-stone-500">
-            {supplier?.name ?? "—"} · SL{" "}
-            {receipt.supplier_document_no || "—"} · INV{" "}
+            {supplier?.name ?? "—"} ·{" "}
+            {t(messages, "pg.receiving.stepShippingList")}{" "}
+            {receipt.supplier_document_no || "—"} ·{" "}
+            {t(messages, "pg.receiving.stepInvoice")}{" "}
             {receipt.supplier_invoice_no || "—"} ·{" "}
             {t(messages, "pg.receiving.poLabel")} {po?.po_number}
           </p>
@@ -129,7 +133,7 @@ export default async function ThreeWayMatchPage({
         </Badge>
       </div>
 
-      <ReceivingWorkflowNav receiptId={id} active="match" />
+      <ReceivingWorkflowNav receiptId={id} active="match" completed={progress} />
 
       <div className="rounded-md border border-stone-200 bg-stone-50 px-4 py-3 text-sm text-stone-700">
         {t(messages, "pg.receiving.matchHint").replace(

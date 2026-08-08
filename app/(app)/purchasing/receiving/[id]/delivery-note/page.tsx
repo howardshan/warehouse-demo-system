@@ -7,6 +7,7 @@ import { getDictionary, t } from "@/lib/i18n/dictionaries";
 import { statusLabel } from "@/lib/i18n/status";
 import { SupplierDeliveryNoteForm } from "../../../purchasing-forms";
 import { ReceivingWorkflowNav } from "../../receiving-workflow-nav";
+import { getReceivingProgress } from "../../progress";
 
 export default async function DeliveryNotePage({
   params,
@@ -33,6 +34,7 @@ export default async function DeliveryNotePage({
       .order("line_no"),
   ]);
   if (!receipt) notFound();
+  const progress = await getReceivingProgress(id);
   const po = Array.isArray(receipt.purchase_orders)
     ? receipt.purchase_orders[0]
     : receipt.purchase_orders;
@@ -85,7 +87,7 @@ export default async function DeliveryNotePage({
         </Badge>
       </div>
 
-      <ReceivingWorkflowNav receiptId={id} active="shipping" />
+      <ReceivingWorkflowNav receiptId={id} active="shipping" completed={progress} />
 
       <div className="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
         {t(messages, "pg.receiving.deliveryNoteHint")}
